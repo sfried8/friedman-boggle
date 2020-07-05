@@ -19,20 +19,64 @@
                     </div>
                 </div>
             </div>
-            <button v-if="!isShuffling" @click="shuffleDice">Shuffle</button>
         </div>
-        <div>
-            <base-timer ref="timer" @click.native="timerClicked"></base-timer>
-            <button @click="resetClicked">Reset Timer</button>
-        </div>
-        <div>
-            <dictionary-tester></dictionary-tester>
-
-            <div @click="showBestWords = !showBestWords">
-                {{ (showBestWords ? "Hide" : "Show") + " best words" }}
+        <div
+            style="width:25%;display:flex;flex-direction:column;justify-content:space-around;"
+        >
+            <div>
+                <base-timer
+                    ref="timer"
+                    @click.native="timerClicked"
+                ></base-timer>
+                <b-button @click="resetClicked"
+                    ><b-icon-arrow-clockwise></b-icon-arrow-clockwise
+                    >&nbsp;&nbsp;Restart Timer</b-button
+                >
             </div>
-            <div v-if="showBestWords">
-                <div v-for="w in possibleWords" :key="w">{{ w }}</div>
+            <div>
+                <b-button
+                    variant="primary"
+                    :disabled="isShuffling"
+                    @click="shuffleDice"
+                    ><b-icon-shuffle></b-icon-shuffle
+                    >&nbsp;&nbsp;Shuffle</b-button
+                >
+            </div>
+        </div>
+        <div
+            style="width:25%;display:flex;flex-direction:column;justify-content:space-around;"
+        >
+            <dictionary-tester></dictionary-tester>
+            <div>
+                <b-button
+                    style="width:100%"
+                    variant="outline-secondary"
+                    @click="showBestWords = !showBestWords"
+                >
+                    <b-icon
+                        :icon="'chevron-' + (showBestWords ? 'up' : 'down')"
+                    ></b-icon>
+                    {{ (showBestWords ? "  Hide" : "  Show") + " best words" }}
+                </b-button>
+                <b-collapse v-model="showBestWords">
+                    <b-list-group>
+                        <b-list-group-item
+                            v-for="w in possibleWords"
+                            :key="w"
+                            :id="'bestwords-entry-' + w"
+                        >
+                            {{ w }}
+                            <dictionary-entry-popover
+                                :target="'bestwords-entry-' + w"
+                                :word="w"
+                            >
+                            </dictionary-entry-popover>
+                        </b-list-group-item>
+                        <b-list-group-item>
+                            View More
+                        </b-list-group-item>
+                    </b-list-group>
+                </b-collapse>
             </div>
         </div>
     </div>
@@ -41,6 +85,7 @@
 <script>
 import { MakeTrie, BoggleWords } from "../boggle_solver";
 import BaseTimer from "./BaseTimer.vue";
+import DictionaryEntryPopover from "./DictionaryEntryPopover.vue";
 import DictionaryTester from "./DictionaryTester.vue";
 import Dictionary from "../Dictionary";
 const BOGGLE_DICE = [
@@ -81,7 +126,7 @@ function delay(ms) {
     });
 }
 export default {
-    components: { BaseTimer, DictionaryTester },
+    components: { BaseTimer, DictionaryTester, DictionaryEntryPopover },
     data() {
         return {
             rows: [],
@@ -165,12 +210,14 @@ export default {
 .boggle-board-container {
     display: flex;
     flex-direction: row;
+    justify-content: space-evenly;
 }
 .boggle-board {
     font-size: 14.4vh;
     vertical-align: middle;
     width: 80vh;
     height: 80vh;
+    margin: 0 5vh 5vh 5vh;
 }
 .boggle-row {
     display: flex;
@@ -178,11 +225,11 @@ export default {
     flex-wrap: wrap;
     width: 100%;
     line-height: 133%;
-    height: calc(25% - 6px);
+    /* height: calc(25% - 6px); */
 }
 .boggle-cell {
     width: calc(25% - 6px);
-    height: calc(100% - 6px);
+    /* height: calc(100% - 6px); */
     border: 3px solid grey;
 }
 .boggle-cell-qu {

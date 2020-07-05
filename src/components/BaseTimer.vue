@@ -141,6 +141,7 @@ export default {
     position: relative;
     width: 300px;
     height: 300px;
+    left: calc(50% - 150px);
     cursor: pointer;
 }
 .base-timer__svg {
@@ -190,6 +191,6 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 48px;
+    font-size: 14.4vh;
 }
 </style>

@@ -1,7 +1,10 @@
 <template>
     <div>
         <div v-if="dictionary">
-            <input type="text" v-model="query" />
+            <b-form-input
+                placeholder="Check Collins 2019 Scrabble Dictionary"
+                v-model="query"
+            />
             <div>{{ definition }}</div>
         </div>
         <div v-else>Loading dictionary data</div>
