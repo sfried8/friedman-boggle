@@ -31,7 +31,7 @@
 
 <script>
 const FULL_DASH_ARRAY = 283;
-const WARNING_THRESHOLD = 10;
+const WARNING_THRESHOLD = 20;
 const ALERT_THRESHOLD = 5;
 
 const COLOR_CODES = {
@@ -139,9 +139,9 @@ export default {
 <style>
 .base-timer {
     position: relative;
-    width: 300px;
-    height: 300px;
-    left: calc(50% - 150px);
+    width: 40vh;
+    height: 40vh;
+    left: calc(50% - 20vh);
     cursor: pointer;
 }
 .base-timer__svg {
@@ -154,12 +154,12 @@ export default {
 }
 
 .base-timer__path-elapsed {
-    stroke-width: 7px;
+    stroke-width: 1vh;
     stroke: grey;
 }
 
 .base-timer__path-remaining {
-    stroke-width: 7px;
+    stroke-width: 1vh;
     stroke-linecap: round;
     transform: rotate(90deg);
     transform-origin: center;
@@ -185,8 +185,8 @@ export default {
 
 .base-timer__label {
     position: absolute;
-    width: 300px;
-    height: 300px;
+    width: 40vh;
+    height: 40vh;
     top: 0;
     display: flex;
     align-items: center;

@@ -29,6 +29,7 @@ export default {
     },
     watch: {
         query: function() {
+            this.$emit("changeword", this.query.toUpperCase());
             Dictionary.getDefinition(this.query).then(
                 (d) => (this.definition = d)
             );

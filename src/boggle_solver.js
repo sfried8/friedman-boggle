@@ -36,6 +36,7 @@ export const BoggleWords = function(grid, dict, mustHave) {
     const cols = grid[0].length;
     const queue = [];
     const words = new Set();
+    const wordToPositions = {};
     for (let y = 0; y < cols; y++) {
         for (let x = 0; x < rows; x++) {
             const c = grid[y][x];
@@ -85,7 +86,10 @@ export const BoggleWords = function(grid, dict, mustHave) {
                             s2.indexOf(mustHave) !== -1
                         )
                             words.add(s2);
-
+                        wordToPositions[s2.replace(/Q/, "QU")] = [
+                            [x2, y2],
+                            ...h,
+                        ];
                         // console.log(newHist, s2);
                     }
                     queue.push([x2, y2, s2, node2, newHist]);
@@ -93,7 +97,7 @@ export const BoggleWords = function(grid, dict, mustHave) {
             }
         }
     }
-    return words.values();
+    return wordToPositions;
 };
 /*Example usage:
 var df = require('./en_au_dict.js');

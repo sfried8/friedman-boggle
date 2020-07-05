@@ -8,7 +8,11 @@
                     v-for="(row, rowIndex) in rows"
                 >
                     <div
-                        class="boggle-cell"
+                        :class="{
+                            'boggle-cell': true,
+                            'boggle-cell-highlighted':
+                                highlightedCells[letterIndex][rowIndex],
+                        }"
                         :key="letter + letterIndex"
                         v-for="(letter, letterIndex) in row"
                     >
@@ -46,7 +50,9 @@
         <div
             style="width:25%;display:flex;flex-direction:column;justify-content:space-around;"
         >
-            <dictionary-tester></dictionary-tester>
+            <dictionary-tester
+                @changeword="mouseEnterDictEntry"
+            ></dictionary-tester>
             <div>
                 <b-button
                     style="width:100%"
@@ -61,7 +67,9 @@
                 <b-collapse v-model="showBestWords">
                     <b-list-group>
                         <b-list-group-item
-                            v-for="w in possibleWords"
+                            v-for="w in bestWords"
+                            @mouseenter="mouseEnterDictEntry(w)"
+                            @mouseleave="mouseLeaveDictEntry"
                             :key="w"
                             :id="'bestwords-entry-' + w"
                         >
@@ -71,9 +79,6 @@
                                 :word="w"
                             >
                             </dictionary-entry-popover>
-                        </b-list-group-item>
-                        <b-list-group-item>
-                            View More
                         </b-list-group-item>
                     </b-list-group>
                 </b-collapse>
@@ -134,6 +139,12 @@ export default {
             feliz: null,
             showBestWords: false,
             isShuffling: false,
+            highlightedCells: [
+                [false, false, false, false],
+                [false, false, false, false],
+                [false, false, false, false],
+                [false, false, false, false],
+            ],
         };
     },
     mounted() {
@@ -146,6 +157,27 @@ export default {
         });
     },
     methods: {
+        mouseEnterDictEntry(w) {
+            this.mouseLeaveDictEntry();
+            setTimeout(() => {
+                if (this.possibleWords[w]) {
+                    for (const location of this.possibleWords[w]) {
+                        this.highlightedCells[location[0]][location[1]] = true;
+                        this.highlightedCells = JSON.parse(
+                            JSON.stringify(this.highlightedCells)
+                        );
+                    }
+                }
+            }, 0);
+        },
+        mouseLeaveDictEntry() {
+            this.highlightedCells = [
+                [false, false, false, false],
+                [false, false, false, false],
+                [false, false, false, false],
+                [false, false, false, false],
+            ];
+        },
         shuffleOnce() {
             this.showBestWords = false;
             this.rows = [];
@@ -166,6 +198,7 @@ export default {
             this.resetClicked();
             this.timerClicked();
             this.feliz.play();
+            this.mouseLeaveDictEntry();
             let done = false;
             setTimeout(() => (done = true), 4000);
             while (!done) {
@@ -188,19 +221,20 @@ export default {
             if (!this.rows.length || !this.dictionaryTrie) {
                 return [];
             }
-            const words = [
-                ...BoggleWords(
-                    this.rows.map((r) => r.join("")),
-                    this.dictionaryTrie
-                ),
-            ];
-            words.sort((a, b) => {
+            return BoggleWords(
+                this.rows.map((r) => r.join("")),
+                this.dictionaryTrie
+            );
+        },
+        bestWords() {
+            const best = Object.keys(this.possibleWords);
+            best.sort((a, b) => {
                 if (a.length === b.length) {
                     return a.localeCompare(b);
                 }
                 return b.length - a.length;
             });
-            return words.slice(0, 5).map((w) => w.replace(/Q/, "QU"));
+            return best.slice(0, 5);
         },
     },
 };
@@ -234,5 +268,8 @@ export default {
 }
 .boggle-cell-qu {
     font-size: 12.5vh;
+}
+.boggle-cell-highlighted {
+    background-color: rgb(85, 204, 151);
 }
 </style>
