@@ -45,6 +45,7 @@
                     ><b-icon-shuffle></b-icon-shuffle
                     >&nbsp;&nbsp;Shuffle</b-button
                 >
+                <input type="file" @change="felizChange" v-if="!feliz" />
             </div>
         </div>
         <div
@@ -148,15 +149,31 @@ export default {
         };
     },
     mounted() {
-        this.feliz = new Audio("FelizNavidad.mp3");
-        this.feliz.addEventListener("canplaythrough", () => {
-            this.shuffleOnce();
-            Dictionary.getDictionaryTrie().then((d) => {
-                this.dictionaryTrie = d;
-            });
-        });
+        this.initializeFeliz()
+            .then(() => this.initializeDictionary())
+            .then(() => this.shuffleOnce());
     },
     methods: {
+        async initializeFeliz() {
+            const s = await Dictionary.getSound("shake");
+            if (s) {
+                return new Promise((res) => {
+                    this.feliz = new Audio(URL.createObjectURL(s.content));
+                    this.feliz.addEventListener("canplaythrough", () => {
+                        res();
+                    });
+                });
+            }
+        },
+
+        async initializeDictionary() {
+            this.dictionaryTrie = await Dictionary.getDictionaryTrie();
+        },
+        felizChange(e) {
+            Dictionary.uploadSound(e.target.files[0]).then(() =>
+                this.initializeFeliz()
+            );
+        },
         mouseEnterDictEntry(w) {
             this.mouseLeaveDictEntry();
             setTimeout(() => {

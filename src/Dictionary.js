@@ -5,8 +5,9 @@ let _db = null;
 async function indexDictionary() {
     if (!_db) {
         _db = new Dexie("boggledictionary");
-        _db.version(1).stores({
+        _db.version(2).stores({
             words: "++id,word,definition",
+            sounds: "++id,name",
         });
         await _db.on("ready");
     }
@@ -20,6 +21,31 @@ async function indexDictionary() {
 }
 
 export default {
+    uploadSound: async (file) => {
+        if (!_db) {
+            _db = new Dexie("boggledictionary");
+            _db.version(2).stores({
+                words: "++id,word,definition",
+                sounds: "++id,name",
+            });
+            await _db.on("ready");
+        }
+        await _db.sounds.add({ name: "shake", content: file });
+    },
+    getSound: async (name) => {
+        if (!_db) {
+            _db = new Dexie("boggledictionary");
+            _db.version(2).stores({
+                words: "++id,word,definition",
+                sounds: "++id,name",
+            });
+            await _db.on("ready");
+        }
+        return await _db.sounds
+            .where("name")
+            .equalsIgnoreCase(name)
+            .first();
+    },
     uploadDictionary: async (file) => {
         await indexDictionary();
         const newEntries = [];
