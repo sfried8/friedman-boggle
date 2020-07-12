@@ -1,13 +1,19 @@
 <template>
     <div>
-        <div v-if="dictionary">
-            <b-form-input
-                placeholder="Check Collins 2019 Scrabble Dictionary"
-                v-model="query"
-            />
+        <div v-if="dictionaryIsInitialized">
+            <b-form-input placeholder="Check Dictionary" v-model="query" />
             <div>{{ definition }}</div>
         </div>
+        <div v-else-if="needsDictionaryUpload">
+            No Dictionary Data Found
+        </div>
         <div v-else>Loading dictionary data</div>
+        <input
+            type="file"
+            ref="dictionaryfileinput"
+            @change="fileChange"
+            name="dictfile"
+        />
     </div>
 </template>
 
@@ -16,16 +22,31 @@ import Dictionary from "../Dictionary";
 export default {
     data() {
         return {
-            dictionary: null,
             query: "",
             definition: "",
             loadingMessage: "Loading dictionary data...",
+            dictionaryIsInitialized: false,
+            needsDictionaryUpload: false,
         };
     },
     mounted() {
-        Dictionary.getDictionary().then((d) => {
-            this.dictionary = d;
-        });
+        this.tryInitializing();
+    },
+    methods: {
+        tryInitializing() {
+            Dictionary.getDictionaryTrie()
+                .then(() => {
+                    this.dictionaryIsInitialized = true;
+                })
+                .catch(() => {
+                    this.needsDictionaryUpload = true;
+                });
+        },
+        fileChange(event) {
+            Dictionary.uploadDictionary(event.target.files[0]).then(() =>
+                this.tryInitializing()
+            );
+        },
     },
     watch: {
         query: function() {
@@ -33,11 +54,6 @@ export default {
             Dictionary.getDefinition(this.query).then(
                 (d) => (this.definition = d)
             );
-        },
-    },
-    computed: {
-        isValid() {
-            return this.query && this.dictionary.has(this.query.toUpperCase());
         },
     },
 };

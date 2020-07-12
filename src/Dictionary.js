@@ -1,43 +1,48 @@
 import Dexie from "dexie";
-let _dictionary = null;
+import { MakeTrie } from "./boggle_solver";
+let _dictionaryTrie = null;
 let _db = null;
 async function indexDictionary() {
-    _db = new Dexie("boggledictionary");
-    _db.version(1).stores({
-        words: "++id,word,definition",
-    });
-    await _db.on("ready");
+    if (!_db) {
+        _db = new Dexie("boggledictionary");
+        _db.version(1).stores({
+            words: "++id,word,definition",
+        });
+        await _db.on("ready");
 
-    const count = await _db.words.count();
-    if (count > 0) {
-        console.log("Already populated");
-        return;
-    }
-    const newEntries = [];
-    const wordsStr = await (await fetch("dictionarydefinitions.txt")).text();
-
-    for (const line of wordsStr.split("\r\n")) {
-        const [word, definition] = line.split("\t");
-        newEntries.push({ word, definition });
-    }
-
-    return _db.words.bulkAdd(newEntries);
-}
-async function initDictionary() {
-    let wordsStr = localStorage.getItem("words");
-    if (!wordsStr) {
-        wordsStr = await (await fetch("dictionarycontent.txt")).text();
-        localStorage.setItem("words", wordsStr);
-    }
-    indexDictionary();
-    _dictionary = new Set(wordsStr.split("\r\n"));
-}
-export default {
-    getDictionary: async () => {
-        if (!_dictionary) {
-            await initDictionary();
+        const count = await _db.words.count();
+        if (count > 0) {
+            _dictionaryTrie = new MakeTrie(
+                new Set(JSON.parse(localStorage.getItem("words")))
+            );
         }
-        return _dictionary;
+    }
+}
+
+export default {
+    uploadDictionary: async (file) => {
+        await indexDictionary();
+        const newEntries = [];
+        const wordsStr = await file.text();
+        const wordsArr = [];
+        for (const line of wordsStr.split("\r\n")) {
+            const [word, definition] = line.split("\t");
+            newEntries.push({ word, definition });
+            wordsArr.push(word);
+        }
+        localStorage.setItem("words", JSON.stringify(wordsArr));
+        _dictionaryTrie = new MakeTrie(new Set(wordsArr));
+
+        return _db.words.bulkAdd(newEntries);
+    },
+    getDictionaryTrie: async () => {
+        if (!_dictionaryTrie) {
+            await indexDictionary();
+            if (!_dictionaryTrie) {
+                throw new Error("No dictionary data found");
+            }
+        }
+        return _dictionaryTrie;
     },
     getDefinition: async (word) => {
         if (!_db) {

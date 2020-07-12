@@ -88,7 +88,7 @@
 </template>
 
 <script>
-import { MakeTrie, BoggleWords } from "../boggle_solver";
+import { BoggleWords } from "../boggle_solver";
 import BaseTimer from "./BaseTimer.vue";
 import DictionaryEntryPopover from "./DictionaryEntryPopover.vue";
 import DictionaryTester from "./DictionaryTester.vue";
@@ -151,8 +151,8 @@ export default {
         this.feliz = new Audio("FelizNavidad.mp3");
         this.feliz.addEventListener("canplaythrough", () => {
             this.shuffleOnce();
-            Dictionary.getDictionary().then((d) => {
-                this.dictionaryTrie = new MakeTrie(d);
+            Dictionary.getDictionaryTrie().then((d) => {
+                this.dictionaryTrie = d;
             });
         });
     },
