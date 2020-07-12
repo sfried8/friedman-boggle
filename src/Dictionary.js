@@ -9,12 +9,12 @@ async function indexDictionary() {
             words: "++id,word,definition",
         });
         await _db.on("ready");
-
+    }
+    if (!_dictionaryTrie) {
         const count = await _db.words.count();
         if (count > 0) {
-            _dictionaryTrie = new MakeTrie(
-                new Set(JSON.parse(localStorage.getItem("words")))
-            );
+            const wordsstr = localStorage.getItem("words");
+            _dictionaryTrie = new MakeTrie(new Set(JSON.parse(wordsstr)));
         }
     }
 }

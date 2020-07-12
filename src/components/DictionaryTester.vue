@@ -6,14 +6,14 @@
         </div>
         <div v-else-if="needsDictionaryUpload">
             No Dictionary Data Found
+            <input
+                type="file"
+                ref="dictionaryfileinput"
+                @change="fileChange"
+                name="dictfile"
+            />
         </div>
         <div v-else>Loading dictionary data</div>
-        <input
-            type="file"
-            ref="dictionaryfileinput"
-            @change="fileChange"
-            name="dictfile"
-        />
     </div>
 </template>
 
@@ -37,6 +37,7 @@ export default {
             Dictionary.getDictionaryTrie()
                 .then(() => {
                     this.dictionaryIsInitialized = true;
+                    this.needsDictionaryUpload = false;
                 })
                 .catch(() => {
                     this.needsDictionaryUpload = true;
