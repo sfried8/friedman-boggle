@@ -5,8 +5,8 @@ let _db = null;
 async function indexDictionary() {
     if (!_db) {
         _db = new Dexie("boggledictionary");
-        _db.version(2).stores({
-            words: "++id,word,definition",
+        _db.version(3).stores({
+            words: "++id,word,definition,isCommon",
             sounds: "++id,name",
         });
         await _db.on("ready");
@@ -24,8 +24,8 @@ export default {
     uploadSound: async (file) => {
         if (!_db) {
             _db = new Dexie("boggledictionary");
-            _db.version(2).stores({
-                words: "++id,word,definition",
+            _db.version(3).stores({
+                words: "++id,word,definition,isCommon",
                 sounds: "++id,name",
             });
             await _db.on("ready");
@@ -35,8 +35,8 @@ export default {
     getSound: async (name) => {
         if (!_db) {
             _db = new Dexie("boggledictionary");
-            _db.version(2).stores({
-                words: "++id,word,definition",
+            _db.version(3).stores({
+                words: "++id,word,definition,isCommon",
                 sounds: "++id,name",
             });
             await _db.on("ready");
@@ -50,10 +50,21 @@ export default {
         await indexDictionary();
         const newEntries = [];
         const wordsStr = await file.text();
+        const commonWords = new Set(
+            (
+                await (
+                    await fetch(
+                        "https://raw.githubusercontent.com/first20hours/google-10000-english/master/20k.txt"
+                    )
+                ).text()
+            ).split("\n")
+        );
+
         const wordsArr = [];
         for (const line of wordsStr.split("\r\n")) {
             const [word, definition] = line.split("\t");
-            newEntries.push({ word, definition });
+            const isCommon = commonWords.has(word.toLowerCase());
+            newEntries.push({ word, definition, isCommon });
             wordsArr.push(word);
         }
         localStorage.setItem("words", JSON.stringify(wordsArr));
@@ -83,5 +94,17 @@ export default {
         } catch (error) {
             return;
         }
+    },
+    getCommon: async (listOfWords) => {
+        if (!_db) {
+            await indexDictionary();
+        }
+        const entries = (
+            await _db.words
+                .where("word")
+                .anyOfIgnoreCase(listOfWords)
+                .toArray()
+        ).filter((w) => w.isCommon);
+        return entries.map((e) => e.word);
     },
 };

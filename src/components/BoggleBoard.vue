@@ -126,11 +126,11 @@ function shuffle(array) {
 
     return array;
 }
-function delay(ms) {
-    return new Promise((res) => {
-        return setTimeout(res, ms);
-    });
-}
+// function delay(ms) {
+//     return new Promise((res) => {
+//         return setTimeout(res, ms);
+//     });
+// }
 export default {
     components: { BaseTimer, DictionaryTester, DictionaryEntryPopover },
     data() {
@@ -140,6 +140,8 @@ export default {
             feliz: null,
             showBestWords: false,
             isShuffling: false,
+            commonWords: [],
+            difficultyRating: "",
             highlightedCells: [
                 [false, false, false, false],
                 [false, false, false, false],
@@ -196,7 +198,7 @@ export default {
             ];
         },
         shuffleOnce() {
-            this.showBestWords = false;
+            // this.showBestWords = false;
             this.rows = [];
             const letters = BOGGLE_DICE.map((d) =>
                 d.charAt(~~(Math.random() * 6))
@@ -216,15 +218,20 @@ export default {
             this.timerClicked();
             this.feliz.play();
             this.mouseLeaveDictEntry();
-            let done = false;
-            setTimeout(() => (done = true), 4000);
-            while (!done) {
-                this.shuffleOnce();
-                await delay(200);
-            }
+            // let done = false;
+            // setTimeout(() => (done = true), 400);
+            // while (!done) {
+            this.shuffleOnce();
+            // await delay(200);
+            // }
             this.feliz.pause();
             this.timerClicked();
             this.isShuffling = false;
+            let possibleWords = Object.keys(this.possibleWords).filter(
+                (w) => w.length > 3
+            );
+            let numCommon = (await Dictionary.getCommon(possibleWords)).length;
+            this.difficultyRating = numCommon + "/" + possibleWords.length;
         },
         timerClicked() {
             this.$refs.timer.pause();
@@ -233,10 +240,17 @@ export default {
             this.$refs.timer.startTimer();
         },
     },
+    watch: {
+        possibleWords() {
+            Dictionary.getCommon(Object.keys(this.possibleWords)).then(
+                (c) => (this.commonWords = c)
+            );
+        },
+    },
     computed: {
         possibleWords() {
             if (!this.rows.length || !this.dictionaryTrie) {
-                return [];
+                return {};
             }
             return BoggleWords(
                 this.rows.map((r) => r.join("")),
@@ -244,14 +258,34 @@ export default {
             );
         },
         bestWords() {
-            const best = Object.keys(this.possibleWords);
+            const best = this.commonWords.filter((w) => w.length > 3);
             best.sort((a, b) => {
                 if (a.length === b.length) {
                     return a.localeCompare(b);
                 }
                 return b.length - a.length;
             });
-            return best.slice(0, 5);
+            const bestWord = Object.keys(this.possibleWords)
+                .filter((w) => w.length > 3)
+                .sort((a, b) => {
+                    if (a.length === b.length) {
+                        return a.localeCompare(b);
+                    }
+                    return b.length - a.length;
+                })[0];
+            // return bestWord;
+            const top5 = best.slice(0, 5);
+            if (
+                bestWord &&
+                top5.length > 0 &&
+                !top5.includes(bestWord) &&
+                bestWord.length > top5[0].length
+            ) {
+                top5.splice(0, 0, bestWord);
+            } else {
+                top5.push(best[5]);
+            }
+            return top5;
         },
     },
 };

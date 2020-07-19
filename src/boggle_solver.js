@@ -6,7 +6,7 @@ const TrieNode = function(parent, value) {
     this.children = new Array(26);
     this.isWord = false;
     if (parent !== undefined) {
-        parent.children[value.charCodeAt(0) - 97] = this;
+        parent.children[value.charCodeAt(0) - 65] = this;
     }
 };
 export const MakeTrie = function(dict) {
@@ -18,14 +18,12 @@ export const MakeTrie = function(dict) {
         for (let i = 0; i < word.length; i++) {
             const letter = word[i];
             const ord = letter.charCodeAt(0);
-            if (97 <= ord < 123) {
-                // console.log(curNode);
-                let nextNode = curNode.children[ord - 97];
-                if (nextNode === undefined) {
-                    nextNode = new TrieNode(curNode, letter);
-                }
-                curNode = nextNode;
+            // console.log(curNode);
+            let nextNode = curNode.children[ord - 65];
+            if (nextNode === undefined) {
+                nextNode = new TrieNode(curNode, letter);
             }
+            curNode = nextNode;
         }
         curNode.isWord = true;
     }
@@ -39,12 +37,13 @@ export const BoggleWords = function(grid, dict, mustHave) {
     const wordToPositions = {};
     for (let y = 0; y < cols; y++) {
         for (let x = 0; x < rows; x++) {
-            const c = grid[y][x];
+            let c = grid[y][x];
             const ord = c.charCodeAt(0);
 
-            let node0 = dict.children[ord - 97];
+            let node0 = dict.children[ord - 65];
             if (c.charAt(0) === "Q") {
-                node0 = node0.children["U".charCodeAt(0) - 97];
+                c += "U";
+                node0 = node0.children[20];
             }
             const node = node0;
             if (node !== undefined) {
@@ -76,8 +75,15 @@ export const BoggleWords = function(grid, dict, mustHave) {
             if (0 <= x2 && x2 < cols && 0 <= y2 && y2 < rows) {
                 const newHist = h.slice();
                 newHist.push([x2, y2]);
-                const s2 = s + grid[y2][x2];
-                const node2 = node.children[grid[y2][x2].charCodeAt(0) - 97];
+                let s2 = s + grid[y2][x2];
+
+                let node2 = node.children[grid[y2][x2].charCodeAt(0) - 65];
+                if (grid[y2][x2] === "Q") {
+                    s2 += "U";
+                    if (node2) {
+                        node2 = node2.children[20];
+                    }
+                }
                 if (node2 !== undefined) {
                     // console.log(s2);
                     if (node2.isWord) {
@@ -86,10 +92,7 @@ export const BoggleWords = function(grid, dict, mustHave) {
                             s2.indexOf(mustHave) !== -1
                         )
                             words.add(s2);
-                        wordToPositions[s2.replace(/Q/, "QU")] = [
-                            [x2, y2],
-                            ...h,
-                        ];
+                        wordToPositions[s2] = [[x2, y2], ...h];
                         // console.log(newHist, s2);
                     }
                     queue.push([x2, y2, s2, node2, newHist]);
