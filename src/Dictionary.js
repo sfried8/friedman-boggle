@@ -48,7 +48,6 @@ export default {
     },
     uploadDictionary: async (file) => {
         await indexDictionary();
-        const newEntries = [];
         const wordsStr = await file.text();
         const commonWords = new Set(
             (
@@ -61,16 +60,23 @@ export default {
         );
 
         const wordsArr = [];
+
+        let newEntries = [];
+        let i = 0;
         for (const line of wordsStr.split("\r\n")) {
             const [word, definition] = line.split("\t");
             const isCommon = commonWords.has(word.toLowerCase());
             newEntries.push({ word, definition, isCommon });
             wordsArr.push(word);
+            if (newEntries.length > 1000) {
+                await _db.words.bulkAdd(newEntries);
+                console.log(i++);
+                newEntries = [];
+            }
         }
+        await _db.words.bulkAdd(newEntries);
         localStorage.setItem("words", JSON.stringify(wordsArr));
         _dictionaryTrie = new MakeTrie(new Set(wordsArr));
-
-        return _db.words.bulkAdd(newEntries);
     },
     getDictionaryTrie: async () => {
         if (!_dictionaryTrie) {

@@ -58,6 +58,7 @@
             </div>
         </div>
         <div
+            v-if="dictionaryTrie"
             style="width:25%;display:flex;flex-direction:column;justify-content:space-around;"
         >
             <dictionary-tester
@@ -215,7 +216,7 @@ export default {
             ];
         },
         shuffleOnce() {
-            // this.showBestWords = false;
+            this.showBestWords = false;
             this.rows = [];
             const letters = BOGGLE_DICE.map((d) =>
                 d.charAt(~~(Math.random() * 6))
@@ -230,10 +231,13 @@ export default {
             }
         },
         async shuffleDice() {
+            this.difficultyRating = "";
             this.isShuffling = true;
             this.resetClicked();
             this.timerClicked();
-            this.feliz.play();
+            if (this.feliz) {
+                this.feliz.play();
+            }
             this.mouseLeaveDictEntry();
             let done = false;
             setTimeout(() => (done = true), 4000);
@@ -241,13 +245,20 @@ export default {
                 this.shuffleOnce();
                 await delay(200);
             }
-            this.feliz.pause();
-            this.timerClicked();
+            if (this.feliz) {
+                this.feliz.pause();
+            }
             this.isShuffling = false;
+            this.shuffleOnce();
+            this.timerClicked();
 
             // this.difficultyRating = numCommon + "/" + possibleWords.length;
         },
         updateDifficulty() {
+            if (!this.dictionaryTrie) {
+                this.difficultyRating = "";
+                return;
+            }
             const possibleWords = Object.keys(this.possibleWords).filter(
                 (w) => w.length > 3
             );
@@ -273,10 +284,14 @@ export default {
     },
     watch: {
         possibleWords() {
-            Dictionary.getCommon(Object.keys(this.possibleWords)).then((c) => {
-                this.commonWords = c;
-                this.updateDifficulty();
-            });
+            if (!this.isShuffling) {
+                Dictionary.getCommon(Object.keys(this.possibleWords)).then(
+                    (c) => {
+                        this.commonWords = c;
+                        this.updateDifficulty();
+                    }
+                );
+            }
         },
     },
     computed: {
