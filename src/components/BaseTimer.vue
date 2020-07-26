@@ -109,10 +109,6 @@ export default {
         },
     },
 
-    mounted() {
-        this.startTimer();
-    },
-
     methods: {
         onTimesUp() {
             clearInterval(this.timerInterval);

@@ -38,6 +38,8 @@
                 >
             </div>
             <div>
+                {{ difficultyRating }}
+                <br />
                 <b-button
                     variant="primary"
                     :disabled="isShuffling"
@@ -45,6 +47,13 @@
                     ><b-icon-shuffle></b-icon-shuffle
                     >&nbsp;&nbsp;Shuffle</b-button
                 >
+                <!-- <b-button
+                    variant="primary"
+                    :disabled="isShuffling"
+                    @click="shuffleOnce"
+                    ><b-icon-shuffle></b-icon-shuffle>&nbsp;&nbsp;Shuffle
+                    Once</b-button
+                > -->
                 <input type="file" @change="felizChange" v-if="!feliz" />
             </div>
         </div>
@@ -126,17 +135,23 @@ function shuffle(array) {
 
     return array;
 }
-// function delay(ms) {
-//     return new Promise((res) => {
-//         return setTimeout(res, ms);
-//     });
-// }
+function delay(ms) {
+    return new Promise((res) => {
+        return setTimeout(res, ms);
+    });
+}
+let dictionaryTrie = null;
 export default {
     components: { BaseTimer, DictionaryTester, DictionaryEntryPopover },
     data() {
         return {
-            rows: [],
-            dictionaryTrie: null,
+            rows: [
+                ["F", "R", "I", "E"],
+                ["D", "M", "A", "N"],
+                ["B", "O", "G", "G"],
+                ["L", "E", "!", "!"],
+            ],
+            dictionaryTrie: false,
             feliz: null,
             showBestWords: false,
             isShuffling: false,
@@ -151,17 +166,18 @@ export default {
         };
     },
     mounted() {
-        this.initializeFeliz()
-            .then(() => this.initializeDictionary())
-            .then(() => this.shuffleOnce());
+        this.initializeFeliz().then(() => this.initializeDictionary());
     },
     methods: {
         async initializeFeliz() {
             const s = await Dictionary.getSound("shake");
             if (s) {
                 return new Promise((res) => {
-                    this.feliz = new Audio(URL.createObjectURL(s.content));
-                    this.feliz.addEventListener("canplaythrough", () => {
+                    const felizAudio = new Audio(
+                        URL.createObjectURL(s.content)
+                    );
+                    felizAudio.addEventListener("canplaythrough", () => {
+                        this.feliz = felizAudio;
                         res();
                     });
                 });
@@ -169,7 +185,8 @@ export default {
         },
 
         async initializeDictionary() {
-            this.dictionaryTrie = await Dictionary.getDictionaryTrie();
+            dictionaryTrie = await Dictionary.getDictionaryTrie();
+            this.dictionaryTrie = true;
         },
         felizChange(e) {
             Dictionary.uploadSound(e.target.files[0]).then(() =>
@@ -218,20 +235,34 @@ export default {
             this.timerClicked();
             this.feliz.play();
             this.mouseLeaveDictEntry();
-            // let done = false;
-            // setTimeout(() => (done = true), 400);
-            // while (!done) {
-            this.shuffleOnce();
-            // await delay(200);
-            // }
+            let done = false;
+            setTimeout(() => (done = true), 4000);
+            while (!done) {
+                this.shuffleOnce();
+                await delay(200);
+            }
             this.feliz.pause();
             this.timerClicked();
             this.isShuffling = false;
-            let possibleWords = Object.keys(this.possibleWords).filter(
+
+            // this.difficultyRating = numCommon + "/" + possibleWords.length;
+        },
+        updateDifficulty() {
+            const possibleWords = Object.keys(this.possibleWords).filter(
                 (w) => w.length > 3
             );
-            let numCommon = (await Dictionary.getCommon(possibleWords)).length;
-            this.difficultyRating = numCommon + "/" + possibleWords.length;
+            let numCommon = this.commonWords.filter((w) => w.length > 3).length;
+            if (possibleWords.length < 1) {
+                this.difficultyRating = "No valid words found!";
+            } else if (possibleWords.length < 10 || numCommon < 8) {
+                this.difficultyRating = "VERY HARD";
+            } else if (numCommon < 17) {
+                this.difficultyRating = "Tough";
+            } else if (numCommon > 40) {
+                this.difficultyRating = "Easy";
+            } else {
+                this.difficultyRating = "";
+            }
         },
         timerClicked() {
             this.$refs.timer.pause();
@@ -242,9 +273,10 @@ export default {
     },
     watch: {
         possibleWords() {
-            Dictionary.getCommon(Object.keys(this.possibleWords)).then(
-                (c) => (this.commonWords = c)
-            );
+            Dictionary.getCommon(Object.keys(this.possibleWords)).then((c) => {
+                this.commonWords = c;
+                this.updateDifficulty();
+            });
         },
     },
     computed: {
@@ -254,7 +286,7 @@ export default {
             }
             return BoggleWords(
                 this.rows.map((r) => r.join("")),
-                this.dictionaryTrie
+                dictionaryTrie
             );
         },
         bestWords() {
