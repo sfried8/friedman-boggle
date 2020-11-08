@@ -4,7 +4,7 @@
             <div class="boggle-board">
                 <div
                     class="boggle-row"
-                    :key="row + rowIndex"
+                    :key="JSON.stringify(row) + rowIndex"
                     v-for="(row, rowIndex) in rows"
                 >
                     <div

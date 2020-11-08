@@ -17,7 +17,7 @@
                     >
                 </div>
                 <b-modal id="uploadfile" title="Upload Dictionary File">
-                    <b-form-file @change="fileChange"></b-form-file>
+                    <b-form-file @change="(f) => fileChange(f)"></b-form-file>
                 </b-modal>
             </div>
             <div v-else>
