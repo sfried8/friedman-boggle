@@ -12,6 +12,12 @@
                     >
                 </div>
                 <div style="margin:10px;">
+                    <b-btn variant="warn" @click="getWordListWithoutDefinitions"
+                        ><b-icon-plus></b-icon-plus>&nbsp; &nbsp; Get words
+                        without definitions</b-btn
+                    >
+                </div>
+                <div style="margin:10px;">
                     <b-btn @click="goToGame"
                         >Play Boggle without Dictionary</b-btn
                     >
@@ -71,6 +77,18 @@ export default {
         },
         fileChange(event) {
             Dictionary.uploadDictionary(event.target.files[0])
+                .then(() => Dictionary.getDictionaryTrie())
+                .then((dictionaryTrie) => {
+                    this.dictionaryIsLoading = false;
+                    this.dictionaryIsMissing = !dictionaryTrie;
+                })
+                .catch(() => {
+                    this.dictionaryIsMissing = true;
+                    this.dictionaryIsLoading = false;
+                });
+        },
+        getWordListWithoutDefinitions() {
+            Dictionary.getWordListWithoutDefinitions()
                 .then(() => Dictionary.getDictionaryTrie())
                 .then((dictionaryTrie) => {
                     this.dictionaryIsLoading = false;

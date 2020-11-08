@@ -78,6 +78,44 @@ export default {
         localStorage.setItem("words", JSON.stringify(wordsArr));
         _dictionaryTrie = new MakeTrie(new Set(wordsArr));
     },
+    getWordListWithoutDefinitions: async () =>{
+                await indexDictionary();
+        const wordsArr = 
+            (
+                await (
+                    await fetch(
+                        "https://raw.githubusercontent.com/jmlewis/valett/master/scrabble/sowpods.txt"
+                    )
+                ).text()
+            ).split("\r\n")
+        
+        const commonWords = new Set(
+            (
+                await (
+                    await fetch(
+                        "https://raw.githubusercontent.com/first20hours/google-10000-english/master/20k.txt"
+                    )
+                ).text()
+            ).split("\n")
+        );
+
+        // const wordsArr = [];
+        let newEntries = [];
+        let i = 0;
+        for (const word of wordsArr) {
+            const isCommon = commonWords.has(word.toLowerCase());
+            newEntries.push({ word, definition:"", isCommon });
+            if (newEntries.length > 1000) {
+                await _db.words.bulkAdd(newEntries);
+                console.log(i++);
+                newEntries = [];
+            }
+            // wordsArr.push(upperWord)
+        }
+        await _db.words.bulkAdd(newEntries);
+        localStorage.setItem("words", JSON.stringify(wordsArr));
+        _dictionaryTrie = new MakeTrie(new Set(wordsArr));
+    },
     getDictionaryTrie: async () => {
         if (!_dictionaryTrie) {
             await indexDictionary();
