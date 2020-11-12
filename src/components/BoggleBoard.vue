@@ -47,6 +47,21 @@
                     ><b-icon-shuffle></b-icon-shuffle
                     >&nbsp;&nbsp;Shuffle</b-button
                 >
+                <br />
+                <b-button
+                    variant="primary"
+                    :disabled="isShuffling || !undoStack.length"
+                    @click="undo"
+                    ><b-icon-arrow-left-short></b-icon-arrow-left-short
+                    >&nbsp;&nbsp;Undo</b-button
+                >
+                <b-button
+                    variant="primary"
+                    :disabled="isShuffling || !redoStack.length"
+                    @click="redo"
+                    ><b-icon-arrow-right-short></b-icon-arrow-right-short
+                    >&nbsp;&nbsp;Redo</b-button
+                >
                 <!-- <b-button
                     variant="primary"
                     :disabled="isShuffling"
@@ -164,10 +179,26 @@ export default {
                 [false, false, false, false],
                 [false, false, false, false],
             ],
+            undoStack: [],
+            redoStack: [],
         };
     },
     mounted() {
-        this.initializeFeliz().then(() => this.initializeDictionary());
+        this.initializeFeliz()
+            .then(() => this.initializeDictionary())
+            .then(() => {
+                const storage = window.localStorage.getItem("history");
+                if (storage) {
+                    const { undoStack, redoStack, boardString } = JSON.parse(
+                        storage
+                    );
+                    this.undoStack = undoStack || [];
+                    this.redoStack = redoStack || [];
+                    if (boardString) {
+                        this.setBoardFromString(boardString);
+                    }
+                }
+            });
     },
     methods: {
         async initializeFeliz() {
@@ -235,6 +266,8 @@ export default {
             this.isShuffling = true;
             this.resetClicked();
             this.timerClicked();
+            this.redoStack = [];
+            this.undoStack.push(this.boardString);
             if (this.feliz) {
                 this.feliz.play();
             }
@@ -251,8 +284,28 @@ export default {
             this.isShuffling = false;
             this.shuffleOnce();
             this.timerClicked();
-
+            // window.localStorage.setItem(J);
             // this.difficultyRating = numCommon + "/" + possibleWords.length;
+        },
+        undo() {
+            const lastBoard = this.undoStack.pop();
+            this.redoStack.push(this.boardString);
+            this.setBoardFromString(lastBoard);
+        },
+        redo() {
+            const nextBoard = this.redoStack.pop();
+            this.undoStack.push(this.boardString);
+            this.setBoardFromString(nextBoard);
+        },
+        setBoardFromString(boardString) {
+            const newRows = [];
+            for (let i = 0; i < 4; i++) {
+                newRows.push([]);
+                for (let j = 0; j < 4; j++) {
+                    newRows[i].push(boardString.charAt(4 * i + j));
+                }
+            }
+            this.rows = newRows;
         },
         updateDifficulty() {
             if (!this.dictionaryTrie) {
@@ -292,6 +345,16 @@ export default {
                     }
                 );
             }
+        },
+        boardString(val) {
+            window.localStorage.setItem(
+                "history",
+                JSON.stringify({
+                    boardString: val,
+                    undoStack: this.undoStack,
+                    redoStack: this.redoStack,
+                })
+            );
         },
     },
     computed: {
@@ -333,6 +396,14 @@ export default {
                 top5.push(best[5]);
             }
             return top5;
+        },
+        boardString() {
+            const s = this.rows.map((r) => r.join("")).join("");
+            if (!s || s.length != 16) {
+                return "";
+            }
+
+            return s;
         },
     },
 };
