@@ -6,8 +6,8 @@ async function indexDictionary() {
     if (!_db) {
         _db = new Dexie("boggledictionary");
         _db.version(3).stores({
-            words: "++id,word,definition,isCommon",
-            sounds: "++id,name",
+            words: "word",
+            sounds: "name",
         });
         await _db.on("ready");
     }
@@ -25,8 +25,8 @@ export default {
         if (!_db) {
             _db = new Dexie("boggledictionary");
             _db.version(3).stores({
-                words: "++id,word,definition,isCommon",
-                sounds: "++id,name",
+                words: "word",
+                sounds: "name",
             });
             await _db.on("ready");
         }
@@ -36,8 +36,8 @@ export default {
         if (!_db) {
             _db = new Dexie("boggledictionary");
             _db.version(3).stores({
-                words: "++id,word,definition,isCommon",
-                sounds: "++id,name",
+                words: "word",
+                sounds: "name",
             });
             await _db.on("ready");
         }
@@ -46,7 +46,7 @@ export default {
             .equalsIgnoreCase(name)
             .first();
     },
-    uploadDictionary: async (file) => {
+    uploadDictionary: async (file, progressCallback) => {
         await indexDictionary();
         const wordsStr = await file.text();
         const commonWords = new Set(
@@ -62,16 +62,18 @@ export default {
         const wordsArr = [];
 
         let newEntries = [];
-        let i = 0;
-        for (const line of wordsStr.split("\r\n")) {
+        const allWords = wordsStr.split("\r\n");
+        const numWords = allWords.length;
+        
+        for (const line of allWords) {
             const [word, definition] = line.split("\t");
             const isCommon = commonWords.has(word.toLowerCase());
             newEntries.push({ word, definition, isCommon });
             wordsArr.push(word);
-            if (newEntries.length > 1000) {
+            if (newEntries.length > 10000) {
                 await _db.words.bulkAdd(newEntries);
-                console.log(i++);
                 newEntries = [];
+                progressCallback(wordsArr.length/numWords)
             }
         }
         await _db.words.bulkAdd(newEntries);
@@ -105,7 +107,7 @@ export default {
         for (const word of wordsArr) {
             const isCommon = commonWords.has(word.toLowerCase());
             newEntries.push({ word, definition:"", isCommon });
-            if (newEntries.length > 1000) {
+            if (newEntries.length > 5000) {
                 await _db.words.bulkAdd(newEntries);
                 console.log(i++);
                 newEntries = [];

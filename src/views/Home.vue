@@ -23,7 +23,24 @@
                     >
                 </div>
                 <b-modal id="uploadfile" title="Upload Dictionary File">
-                    <b-form-file @change="(f) => fileChange(f)"></b-form-file>
+                    <b-form-file
+                        v-if="!dictionaryIsLoading"
+                        @change="(f) => fileChange(f)"
+                    ></b-form-file>
+                    <div v-else>
+                        <div>
+                            Uploading, please wait...
+                        </div>
+                        <div>
+                            This will take a little while, but you'll only need
+                            to do it once!
+                        </div>
+                        <b-progress
+                            :value="dictionaryUploadProgress"
+                            :max="100"
+                            animated
+                        ></b-progress>
+                    </div>
                 </b-modal>
             </div>
             <div v-else>
@@ -48,6 +65,7 @@ export default {
         return {
             dictionaryIsLoading: true,
             dictionaryIsMissing: false,
+            dictionaryUploadProgress: 0,
         };
     },
     mounted() {
@@ -76,7 +94,10 @@ export default {
             router.push("game");
         },
         fileChange(event) {
-            Dictionary.uploadDictionary(event.target.files[0])
+            this.dictionaryIsLoading = true;
+            Dictionary.uploadDictionary(event.target.files[0], (progress) => {
+                this.dictionaryUploadProgress = progress * 100;
+            })
                 .then(() => Dictionary.getDictionaryTrie())
                 .then((dictionaryTrie) => {
                     this.dictionaryIsLoading = false;

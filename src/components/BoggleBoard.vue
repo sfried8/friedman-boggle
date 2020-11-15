@@ -38,11 +38,37 @@
                 >
             </div>
             <div>
-                {{ difficultyRating }}
+                <div v-if="!isShuffling">
+                    <div>Difficulty: {{ difficultyRating }}</div>
+                    <div>Possible Words: {{ numPossible }}</div>
+                    <div>Max Score: {{ possibleScore }}</div>
+                </div>
                 <br />
+                <div>
+                    <input
+                        type="checkbox"
+                        name="allowEasy"
+                        v-model="allowedDifficultyEasy"
+                    /><label for="allowEasy">Easy</label>
+                    <input
+                        type="checkbox"
+                        name="allowNormal"
+                        v-model="allowedDifficultyNormal"
+                    /><label for="allowNormal">Normal</label>
+                    <input
+                        type="checkbox"
+                        name="allowTough"
+                        v-model="allowedDifficultyTough"
+                    /><label for="allowTough">Tough</label>
+                    <input
+                        type="checkbox"
+                        name="allowVeryHard"
+                        v-model="allowedDifficultyVeryHard"
+                    /><label for="allowVeryHard">Very Hard</label>
+                </div>
                 <b-button
                     variant="primary"
-                    :disabled="isShuffling"
+                    :disabled="isShuffling || allowedDifficulties.length === 0"
                     @click="shuffleDice"
                     ><b-icon-shuffle></b-icon-shuffle
                     >&nbsp;&nbsp;Shuffle</b-button
@@ -53,14 +79,14 @@
                     :disabled="isShuffling || !undoStack.length"
                     @click="undo"
                     ><b-icon-arrow-left-short></b-icon-arrow-left-short
-                    >&nbsp;&nbsp;Undo</b-button
+                    >&nbsp;&nbsp;</b-button
                 >
                 <b-button
                     variant="primary"
                     :disabled="isShuffling || !redoStack.length"
                     @click="redo"
                     ><b-icon-arrow-right-short></b-icon-arrow-right-short
-                    >&nbsp;&nbsp;Redo</b-button
+                    >&nbsp;&nbsp;</b-button
                 >
                 <!-- <b-button
                     variant="primary"
@@ -137,6 +163,18 @@ const BOGGLE_DICE = [
     "HIMNQU",
     "HLNNRZ",
 ];
+const DIFFICULTY_RATING = {
+    EASY: "Easy",
+    NORMAL: "Normal",
+    TOUGH: "Tough",
+    VERY_HARD: "Very Hard",
+};
+const backlog = {
+    [DIFFICULTY_RATING.EASY]: [],
+    [DIFFICULTY_RATING.NORMAL]: [],
+    [DIFFICULTY_RATING.TOUGH]: [],
+    [DIFFICULTY_RATING.VERY_HARD]: [],
+};
 function shuffle(array) {
     let currentIndex = array.length;
 
@@ -155,6 +193,22 @@ function delay(ms) {
     return new Promise((res) => {
         return setTimeout(res, ms);
     });
+}
+function score(word) {
+    if (!word || word.length < 4) {
+        return 0;
+    }
+    if (word.length === 4) {
+        return 1;
+    } else if (word.length === 5) {
+        return 2;
+    } else if (word.length === 6) {
+        return 3;
+    } else if (word.length === 7) {
+        return 5;
+    } else {
+        return 11;
+    }
 }
 let dictionaryTrie = null;
 export default {
@@ -181,24 +235,23 @@ export default {
             ],
             undoStack: [],
             redoStack: [],
+            allowedDifficultyEasy: true,
+            allowedDifficultyNormal: true,
+            allowedDifficultyTough: true,
+            allowedDifficultyVeryHard: true,
         };
     },
     mounted() {
-        this.initializeFeliz()
-            .then(() => this.initializeDictionary())
-            .then(() => {
-                const storage = window.localStorage.getItem("history");
-                if (storage) {
-                    const { undoStack, redoStack, boardString } = JSON.parse(
-                        storage
-                    );
-                    this.undoStack = undoStack || [];
-                    this.redoStack = redoStack || [];
-                    if (boardString) {
-                        this.setBoardFromString(boardString);
-                    }
-                }
-            });
+        const storage = window.localStorage.getItem("history");
+        if (storage) {
+            const { undoStack, redoStack, boardString } = JSON.parse(storage);
+            this.undoStack = undoStack || [];
+            this.redoStack = redoStack || [];
+            if (boardString) {
+                this.setBoardFromString(boardString);
+            }
+        }
+        this.initializeFeliz().then(() => this.initializeDictionary());
     },
     methods: {
         async initializeFeliz() {
@@ -275,14 +328,53 @@ export default {
             let done = false;
             setTimeout(() => (done = true), 4000);
             while (!done) {
+                const currentTime = Date.now();
                 this.shuffleOnce();
-                await delay(200);
+                const currentBoardString = this.boardString;
+                const commonWords = await Dictionary.getCommon(
+                    Object.keys(this.possibleWords)
+                );
+                this.commonWords = commonWords;
+                this.updateDifficulty();
+                const difficultyBacklog = backlog[this.difficultyRating];
+                if (difficultyBacklog.length < 20) {
+                    difficultyBacklog.push(currentBoardString);
+                }
+
+                // }
+                await delay(Math.max(0, 200 - (Date.now() - currentTime)));
+            }
+
+            // eslint-disable-next-line no-constant-condition
+            while (true) {
+                const commonWords = await Dictionary.getCommon(
+                    Object.keys(this.possibleWords)
+                );
+                this.commonWords = commonWords;
+                this.updateDifficulty();
+                if (!this.allowedDifficulties.includes(this.difficultyRating)) {
+                    const nextBoard = backlog[
+                        this.getRandomAllowedDifficulty()
+                    ].pop();
+                    if (nextBoard) {
+                        this.setBoardFromString(nextBoard);
+                        break;
+                    } else {
+                        console.log(backlog);
+                        this.shuffleOnce();
+                    }
+                } else {
+                    break;
+                }
             }
             if (this.feliz) {
                 this.feliz.pause();
             }
             this.isShuffling = false;
-            this.shuffleOnce();
+            Object.keys(this.possibleWords).forEach((w) => {
+                console.log(w + " (" + score(w) + ")");
+            });
+            // this.shuffleOnce();
             this.timerClicked();
             // window.localStorage.setItem(J);
             // this.difficultyRating = numCommon + "/" + possibleWords.length;
@@ -319,13 +411,13 @@ export default {
             if (possibleWords.length < 1) {
                 this.difficultyRating = "No valid words found!";
             } else if (possibleWords.length < 10 || numCommon < 8) {
-                this.difficultyRating = "VERY HARD";
+                this.difficultyRating = DIFFICULTY_RATING.VERY_HARD;
             } else if (numCommon < 17) {
-                this.difficultyRating = "Tough";
+                this.difficultyRating = DIFFICULTY_RATING.TOUGH;
             } else if (numCommon > 40) {
-                this.difficultyRating = "Easy";
+                this.difficultyRating = DIFFICULTY_RATING.EASY;
             } else {
-                this.difficultyRating = "";
+                this.difficultyRating = DIFFICULTY_RATING.NORMAL;
             }
         },
         timerClicked() {
@@ -333,6 +425,11 @@ export default {
         },
         resetClicked() {
             this.$refs.timer.startTimer();
+        },
+        getRandomAllowedDifficulty() {
+            const diffs = this.allowedDifficulties;
+            const index = Math.floor(Math.random() * diffs.length);
+            return diffs[index];
         },
     },
     watch: {
@@ -358,14 +455,37 @@ export default {
         },
     },
     computed: {
+        allowedDifficulties() {
+            const r = [];
+            if (this.allowedDifficultyEasy) {
+                r.push(DIFFICULTY_RATING.EASY);
+            }
+            if (this.allowedDifficultyNormal) {
+                r.push(DIFFICULTY_RATING.NORMAL);
+            }
+            if (this.allowedDifficultyTough) {
+                r.push(DIFFICULTY_RATING.TOUGH);
+            }
+            if (this.allowedDifficultyVeryHard) {
+                r.push(DIFFICULTY_RATING.VERY_HARD);
+            }
+            return r;
+        },
         possibleWords() {
             if (!this.rows.length || !this.dictionaryTrie) {
                 return {};
             }
-            return BoggleWords(
+            const allWords = BoggleWords(
                 this.rows.map((r) => r.join("")),
                 dictionaryTrie
             );
+            const validWords = {};
+            for (const w in allWords) {
+                if (w.length > 3) {
+                    validWords[w] = allWords[w];
+                }
+            }
+            return validWords;
         },
         bestWords() {
             const best = this.commonWords.filter((w) => w.length > 3);
@@ -396,6 +516,15 @@ export default {
                 top5.push(best[5]);
             }
             return top5;
+        },
+        numPossible() {
+            return Object.keys(this.possibleWords).length;
+        },
+        possibleScore() {
+            return Object.keys(this.possibleWords).reduce(
+                (a, x) => a + score(x),
+                0
+            );
         },
         boardString() {
             const s = this.rows.map((r) => r.join("")).join("");
