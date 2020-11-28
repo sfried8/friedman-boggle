@@ -3,6 +3,22 @@
         <div>
             <div class="boggle-board">
                 <div
+                    :style="'position:absolute; ' + rotationTransform"
+                    v-for="rotationTransform in arrowTransforms"
+                    :key="rotationTransform"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="#3787dd"
+                        style="position:absolute; top: -12px; left: -12px;  "
+                    >
+                        <path d="M24 12l-11-8v6h-13v4h13v6z" />
+                    </svg>
+                </div>
+                <div
                     class="boggle-row"
                     :key="JSON.stringify(row) + rowIndex"
                     v-for="(row, rowIndex) in rows"
@@ -12,6 +28,9 @@
                             'boggle-cell': true,
                             'boggle-cell-highlighted':
                                 highlightedCells[letterIndex][rowIndex],
+                            'boggle-cell-highlighted-start':
+                                letterIndex === highlightStart[0] &&
+                                rowIndex === highlightStart[1],
                         }"
                         :key="letter + letterIndex"
                         v-for="(letter, letterIndex) in row"
@@ -95,7 +114,6 @@
                     ><b-icon-shuffle></b-icon-shuffle>&nbsp;&nbsp;Shuffle
                     Once</b-button
                 > -->
-                <input type="file" @change="felizChange" v-if="!feliz" />
             </div>
         </div>
         <div
@@ -212,7 +230,11 @@ function score(word) {
 }
 let dictionaryTrie = null;
 export default {
-    components: { BaseTimer, DictionaryTester, DictionaryEntryPopover },
+    components: {
+        BaseTimer,
+        DictionaryTester,
+        DictionaryEntryPopover,
+    },
     data() {
         return {
             rows: [
@@ -233,6 +255,8 @@ export default {
                 [false, false, false, false],
                 [false, false, false, false],
             ],
+            highlightStart: [],
+            arrowTransforms: [],
             undoStack: [],
             redoStack: [],
             allowedDifficultyEasy: true,
@@ -278,9 +302,24 @@ export default {
                 this.initializeFeliz()
             );
         },
+        getTransformForPositions(lastPosition, currentPosition) {
+            const dX = currentPosition[0] - lastPosition[0];
+            const dY = currentPosition[1] - lastPosition[1];
+            let rotation;
+            if (dX === -1) {
+                rotation = "rotate(" + [225, 180, 135][dY + 1] + "deg)";
+            } else if (dX === 0) {
+                rotation = "rotate(" + [270, 0, 90][dY + 1] + "deg)";
+            } else if (dX === 1) {
+                rotation = "rotate(" + [315, 0, 45][dY + 1] + "deg)";
+            }
+            return `transform: translate(${19 * lastPosition[0] +
+                10 * (dX + 1)}vh, ${20 * lastPosition[1] +
+                10 * (dY + 1)}vh) ${rotation} scale(3);`;
+        },
         mouseEnterDictEntry(w) {
-            this.mouseLeaveDictEntry();
             setTimeout(() => {
+                this.mouseLeaveDictEntry();
                 if (this.possibleWords[w]) {
                     for (const location of this.possibleWords[w]) {
                         this.highlightedCells[location[0]][location[1]] = true;
@@ -288,6 +327,25 @@ export default {
                             JSON.stringify(this.highlightedCells)
                         );
                     }
+                    this.highlightStart = [...this.possibleWords[w][1]];
+                    let lastPosition = this.highlightStart;
+                    for (let i = 2; i < this.possibleWords[w].length; i++) {
+                        const currentPosition = this.possibleWords[w][i];
+                        // if (currentPosition[0] < )
+                        this.arrowTransforms.push(
+                            this.getTransformForPositions(
+                                lastPosition,
+                                currentPosition
+                            )
+                        );
+                        lastPosition = currentPosition;
+                    }
+                    this.arrowTransforms.push(
+                        this.getTransformForPositions(
+                            lastPosition,
+                            this.possibleWords[w][0]
+                        )
+                    );
                 }
             }, 0);
         },
@@ -298,6 +356,8 @@ export default {
                 [false, false, false, false],
                 [false, false, false, false],
             ];
+            this.highlightStart = [];
+            this.arrowTransforms = [];
         },
         shuffleOnce() {
             this.showBestWords = false;
@@ -569,5 +629,9 @@ export default {
 }
 .boggle-cell-highlighted {
     background-color: rgb(85, 204, 151);
+}
+.boggle-cell-highlighted-start {
+    border: 3px solid #3787dd;
+    box-shadow: rgb(55, 135, 221) inset 0 0 16px 6px;
 }
 </style>
