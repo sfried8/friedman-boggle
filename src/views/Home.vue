@@ -12,12 +12,35 @@
                     >
                 </div>
                 <div style="margin:10px;">
+                    <b-btn variant="warn" @click="getWordListWithoutDefinitions"
+                        ><b-icon-plus></b-icon-plus>&nbsp; &nbsp; Get words
+                        without definitions</b-btn
+                    >
+                </div>
+                <div style="margin:10px;">
                     <b-btn @click="goToGame"
                         >Play Boggle without Dictionary</b-btn
                     >
                 </div>
                 <b-modal id="uploadfile" title="Upload Dictionary File">
-                    <b-form-file @change="(f) => fileChange(f)"></b-form-file>
+                    <b-form-file
+                        v-if="!dictionaryIsLoading"
+                        @change="(f) => fileChange(f)"
+                    ></b-form-file>
+                    <div v-else>
+                        <div>
+                            Uploading, please wait...
+                        </div>
+                        <div>
+                            This will take a little while, but you'll only need
+                            to do it once!
+                        </div>
+                        <b-progress
+                            :value="dictionaryUploadProgress"
+                            :max="100"
+                            animated
+                        ></b-progress>
+                    </div>
                 </b-modal>
             </div>
             <div v-else>
@@ -42,6 +65,7 @@ export default {
         return {
             dictionaryIsLoading: true,
             dictionaryIsMissing: false,
+            dictionaryUploadProgress: 0,
         };
     },
     mounted() {
@@ -70,7 +94,22 @@ export default {
             router.push("game");
         },
         fileChange(event) {
-            Dictionary.uploadDictionary(event.target.files[0])
+            this.dictionaryIsLoading = true;
+            Dictionary.uploadDictionary(event.target.files[0], (progress) => {
+                this.dictionaryUploadProgress = progress * 100;
+            })
+                .then(() => Dictionary.getDictionaryTrie())
+                .then((dictionaryTrie) => {
+                    this.dictionaryIsLoading = false;
+                    this.dictionaryIsMissing = !dictionaryTrie;
+                })
+                .catch(() => {
+                    this.dictionaryIsMissing = true;
+                    this.dictionaryIsLoading = false;
+                });
+        },
+        getWordListWithoutDefinitions() {
+            Dictionary.getWordListWithoutDefinitions()
                 .then(() => Dictionary.getDictionaryTrie())
                 .then((dictionaryTrie) => {
                     this.dictionaryIsLoading = false;
