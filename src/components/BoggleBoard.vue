@@ -13,9 +13,13 @@
                         height="24"
                         viewBox="0 0 24 24"
                         fill="#3787dd"
-                        style="position:absolute; top: -12px; left: -12px;  "
+                        stroke="#ffffff"
+                        style="position:absolute; top: -12px; left: -12px; filter: drop-shadow(0px 0px 3px #3787dd); "
                     >
-                        <path d="M24 12l-11-8v6h-13v4h13v6z" />
+                        <!-- <path d="M24 12l-11-8v6h-13v4h13v6z" /> -->
+                        <path
+                            d="m15.27047,4.85435l-1.84942,1.83708l4.01196,4.01196l-15.8329,0l0,2.59322l15.8329,0l-4.01196,4.01196l1.84942,1.83709l7.12941,-7.14566l-7.12941,-7.14565z"
+                        />
                     </svg>
                 </div>
                 <div
