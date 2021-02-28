@@ -19,7 +19,38 @@ async function indexDictionary() {
         }
     }
 }
+    const uploadWords = async(wordsAndDefinitions, progressCallback)=>{
+        await indexDictionary();
+        const commonWords = new Set(
+            (
+                await (
+                    await fetch(
+                        "https://raw.githubusercontent.com/first20hours/google-10000-english/master/20k.txt"
+                    )
+                ).text()
+            ).split("\n")
+        );
 
+        const wordsArr = [];
+
+        let newEntries = [];
+        const numWords = wordsAndDefinitions.length;
+        
+        for (const line of wordsAndDefinitions) {
+            const {word, definition} = line;
+            const isCommon = commonWords.has(word.toLowerCase());
+            newEntries.push({ word, definition, isCommon });
+            wordsArr.push(word);
+            if (newEntries.length > 10000) {
+                await _db.words.bulkAdd(newEntries);
+                newEntries = [];
+                progressCallback(wordsArr.length/numWords)
+            }
+        }
+        await _db.words.bulkAdd(newEntries);
+        localStorage.setItem("words", JSON.stringify(wordsArr));
+        _dictionaryTrie = new MakeTrie(new Set(wordsArr));
+    }
 export default {
     uploadSound: async (file) => {
         if (!_db) {
@@ -47,41 +78,45 @@ export default {
             .first();
     },
     uploadDictionary: async (file, progressCallback) => {
-        await indexDictionary();
+        // await indexDictionary();
         const wordsStr = await file.text();
-        const commonWords = new Set(
-            (
-                await (
-                    await fetch(
-                        "https://raw.githubusercontent.com/first20hours/google-10000-english/master/20k.txt"
-                    )
-                ).text()
-            ).split("\n")
-        );
-
-        const wordsArr = [];
-
-        let newEntries = [];
-        const allWords = wordsStr.split("\r\n");
-        const numWords = allWords.length;
-        
-        for (const line of allWords) {
+        const wordsAndDefinitions = wordsStr.split("\r\n").map(line=>{
             const [word, definition] = line.split("\t");
-            const isCommon = commonWords.has(word.toLowerCase());
-            newEntries.push({ word, definition, isCommon });
-            wordsArr.push(word);
-            if (newEntries.length > 10000) {
-                await _db.words.bulkAdd(newEntries);
-                newEntries = [];
-                progressCallback(wordsArr.length/numWords)
-            }
-        }
-        await _db.words.bulkAdd(newEntries);
-        localStorage.setItem("words", JSON.stringify(wordsArr));
-        _dictionaryTrie = new MakeTrie(new Set(wordsArr));
+            return {word, definition};
+        });
+        return uploadWords(wordsAndDefinitions, progressCallback);
+        // const commonWords = new Set(
+        //     (
+        //         await (
+        //             await fetch(
+        //                 "https://raw.githubusercontent.com/first20hours/google-10000-english/master/20k.txt"
+        //             )
+        //         ).text()
+        //     ).split("\n")
+        // );
+
+        // const wordsArr = [];
+
+        // let newEntries = [];
+        // const allWords = wordsStr.split("\r\n");
+        // const numWords = allWords.length;
+        
+        // for (const line of allWords) {
+        //     const [word, definition] = line.split("\t");
+        //     const isCommon = commonWords.has(word.toLowerCase());
+        //     newEntries.push({ word, definition, isCommon });
+        //     wordsArr.push(word);
+        //     if (newEntries.length > 10000) {
+        //         await _db.words.bulkAdd(newEntries);
+        //         newEntries = [];
+        //         progressCallback(wordsArr.length/numWords)
+        //     }
+        // }
+        // await _db.words.bulkAdd(newEntries);
+        // localStorage.setItem("words", JSON.stringify(wordsArr));
+        // _dictionaryTrie = new MakeTrie(new Set(wordsArr));
     },
-    getWordListWithoutDefinitions: async () =>{
-                await indexDictionary();
+    getWordListWithoutDefinitions: async (progressCallback) =>{
         const wordsArr = 
             (
                 await (
@@ -91,32 +126,16 @@ export default {
                 ).text()
             ).split("\r\n")
         
-        const commonWords = new Set(
-            (
-                await (
-                    await fetch(
-                        "https://raw.githubusercontent.com/first20hours/google-10000-english/master/20k.txt"
-                    )
-                ).text()
-            ).split("\n")
-        );
+        const wordsAndDefinitions = wordsArr.map(w=>({word:w,definition:""}))
 
-        // const wordsArr = [];
-        let newEntries = [];
-        let i = 0;
-        for (const word of wordsArr) {
-            const isCommon = commonWords.has(word.toLowerCase());
-            newEntries.push({ word, definition:"", isCommon });
-            if (newEntries.length > 5000) {
-                await _db.words.bulkAdd(newEntries);
-                console.log(i++);
-                newEntries = [];
-            }
-            // wordsArr.push(upperWord)
+        return uploadWords(wordsAndDefinitions, progressCallback)
+    },
+    getWordSet: async () => {
+        if (!_db) {
+            await indexDictionary();
         }
-        await _db.words.bulkAdd(newEntries);
-        localStorage.setItem("words", JSON.stringify(wordsArr));
-        _dictionaryTrie = new MakeTrie(new Set(wordsArr));
+        return (await _db.words.toArray()).map(w=>w.word);
+        
     },
     getDictionaryTrie: async () => {
         if (!_dictionaryTrie) {
