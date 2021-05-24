@@ -126,6 +126,7 @@
         >
             <dictionary-tester
                 @changeword="mouseEnterDictEntry"
+                :show-score="isValidScore"
             ></dictionary-tester>
             <div>
                 <b-button
@@ -267,6 +268,7 @@ export default {
             allowedDifficultyNormal: true,
             allowedDifficultyTough: true,
             allowedDifficultyVeryHard: true,
+            isValidScore: false,
         };
     },
     mounted() {
@@ -325,6 +327,7 @@ export default {
             setTimeout(() => {
                 this.mouseLeaveDictEntry();
                 if (this.possibleWords[w]) {
+                    this.isValidScore = true;
                     for (const location of this.possibleWords[w]) {
                         this.highlightedCells[location[0]][location[1]] = true;
                         this.highlightedCells = JSON.parse(
@@ -350,6 +353,8 @@ export default {
                             this.possibleWords[w][0]
                         )
                     );
+                } else {
+                    this.isValidScore = false;
                 }
             }, 0);
         },

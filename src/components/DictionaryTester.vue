@@ -3,6 +3,7 @@
         <div v-if="dictionaryIsInitialized">
             <b-form-input placeholder="Check Dictionary" v-model="query" />
             <div>{{ definition }}</div>
+            <div class="point-total">{{ pointTotal }}</div>
         </div>
         <div v-else-if="needsDictionaryUpload">
             No Dictionary Data Found
@@ -20,6 +21,7 @@
 <script>
 import Dictionary from "../Dictionary";
 export default {
+    props: ["show-score"],
     data() {
         return {
             query: "",
@@ -57,7 +59,37 @@ export default {
             );
         },
     },
+    computed: {
+        pointTotal() {
+            if (this.definition && this.showScore) {
+                const qLen = this.query.length;
+                if (qLen < 4) {
+                    return "0";
+                }
+                if (qLen === 4) {
+                    return "1";
+                }
+                if (qLen === 5) {
+                    return "2";
+                }
+                if (qLen === 6) {
+                    return "3";
+                }
+                if (qLen === 7) {
+                    return "5";
+                }
+                if (qLen >= 8) {
+                    return "11";
+                }
+            }
+            return "";
+        },
+    },
 };
 </script>
 
-<style></style>
+<style>
+.point-total {
+    font-size: 3rem;
+}
+</style>
