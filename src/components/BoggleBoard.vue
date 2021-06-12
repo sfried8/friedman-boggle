@@ -168,6 +168,7 @@ import BaseTimer from "./BaseTimer.vue";
 import DictionaryEntryPopover from "./DictionaryEntryPopover.vue";
 import DictionaryTester from "./DictionaryTester.vue";
 import Dictionary from "../Dictionary";
+import { shuffle, delay } from "../common";
 const BOGGLE_DICE = [
     "AAEEGN",
     "ABBJOO",
@@ -198,25 +199,6 @@ const backlog = {
     [DIFFICULTY_RATING.TOUGH]: [],
     [DIFFICULTY_RATING.VERY_HARD]: [],
 };
-function shuffle(array) {
-    let currentIndex = array.length;
-
-    while (0 !== currentIndex) {
-        const randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex -= 1;
-
-        const temporaryValue = array[currentIndex];
-        array[currentIndex] = array[randomIndex];
-        array[randomIndex] = temporaryValue;
-    }
-
-    return array;
-}
-function delay(ms) {
-    return new Promise((res) => {
-        return setTimeout(res, ms);
-    });
-}
 function score(word) {
     if (!word || word.length < 4) {
         return 0;
