@@ -284,19 +284,17 @@ export default {
         this.initializeFeliz().then(() => this.initializeDictionary());
     },
     methods: {
-        async initializeFeliz() {
-            const s = await Dictionary.getSound("shake");
-            if (s) {
-                return new Promise((res) => {
-                    const felizAudio = new Audio(
-                        URL.createObjectURL(s.content)
-                    );
-                    felizAudio.addEventListener("canplaythrough", () => {
-                        this.feliz = felizAudio;
-                        res();
-                    });
+                async initializeFeliz() {
+            return new Promise((res) => {
+                const felizAudio = new Audio(
+                    "https://ia903102.us.archive.org/16/items/cd_feliz-navidad_various-artists-alvaro-torres-angela-carra/disc1/01.%20Jos%C3%A9%20Feliciano%20-%20Feliz%20Navidad_sample.mp3"
+                );
+                felizAudio.addEventListener("canplaythrough", () => {
+                    this.feliz = felizAudio;
+                    res();
                 });
-            }
+                felizAudio.loop = true;
+            });
         },
 
         async initializeDictionary() {
