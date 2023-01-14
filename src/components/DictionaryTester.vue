@@ -1,7 +1,12 @@
 <template>
     <div>
         <div v-if="dictionaryIsInitialized">
-            <b-form-input placeholder="Check Dictionary" v-model="query" />
+            <b-form-input
+                @submit="submit"
+                @keypress.enter="submit"
+                placeholder="Check Dictionary"
+                v-model="query"
+            />
             <div>{{ definition }}</div>
             <div class="point-total">{{ pointTotal }}</div>
         </div>
@@ -49,6 +54,10 @@ export default {
             Dictionary.uploadDictionary(event.target.files[0]).then(() =>
                 this.tryInitializing()
             );
+        },
+        submit() {
+            this.$emit("submit-guess", this.query);
+            this.query = "";
         },
     },
     watch: {

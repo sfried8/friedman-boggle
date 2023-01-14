@@ -126,8 +126,22 @@
         >
             <dictionary-tester
                 @changeword="mouseEnterDictEntry"
+                @submit-guess="submitGuess"
                 :show-score="isValidScore"
             ></dictionary-tester>
+            <div style="max-height:50vh;overflow-y:auto;">
+                <b-list-group>
+                    <b-list-group-item
+                        v-for="w in guessedWordEntries"
+                        @mouseenter="mouseEnterDictEntry(w[0])"
+                        @mouseleave="mouseLeaveDictEntry"
+                        :key="w[0]"
+                        :id="'foundwords-entry-' + w[0]"
+                    >
+                        {{ w[1] }}
+                    </b-list-group-item>
+                </b-list-group>
+            </div>
             <div>
                 <b-button
                     style="width:100%"
@@ -168,6 +182,7 @@ import BaseTimer from "./BaseTimer.vue";
 import DictionaryEntryPopover from "./DictionaryEntryPopover.vue";
 import DictionaryTester from "./DictionaryTester.vue";
 import Dictionary from "../Dictionary";
+
 const BOGGLE_DICE = [
     "AAEEGN",
     "ABBJOO",
@@ -250,6 +265,7 @@ export default {
             ],
             dictionaryTrie: false,
             feliz: null,
+            buzzerAudio: null,
             showBestWords: false,
             isShuffling: false,
             commonWords: [],
@@ -269,6 +285,7 @@ export default {
             allowedDifficultyTough: true,
             allowedDifficultyVeryHard: true,
             isValidScore: false,
+            userFoundWords: [],
         };
     },
     mounted() {
@@ -284,7 +301,11 @@ export default {
         this.initializeFeliz().then(() => this.initializeDictionary());
     },
     methods: {
-                async initializeFeliz() {
+        async initializeFeliz() {
+            const buzzerAudio = new Audio(require("@/assets/ffbuzzer.mp3"));
+            buzzerAudio.addEventListener("canplaythrough", () => {
+                this.buzzerAudio = buzzerAudio;
+            });
             return new Promise((res) => {
                 const felizAudio = new Audio(
                     "https://ia903102.us.archive.org/16/items/cd_feliz-navidad_various-artists-alvaro-torres-angela-carra/disc1/01.%20Jos%C3%A9%20Feliciano%20-%20Feliz%20Navidad_sample.mp3"
@@ -498,6 +519,28 @@ export default {
             const index = Math.floor(Math.random() * diffs.length);
             return diffs[index];
         },
+        submitGuess(guess) {
+            const g = guess.toUpperCase();
+            if (this.userFoundWords.includes(g)) {
+                this.buzzerAudio.play();
+                this.$bvToast.toast(`"${g}" was already said!`, {
+                    title: `Uh oh`,
+                    variant: "danger",
+                    solid: true,
+                    toaster: "b-toaster-top-center",
+                });
+            } else if (this.possibleWords[g]) {
+                this.userFoundWords.push(g);
+            } else {
+                this.buzzerAudio.play();
+                this.$bvToast.toast(`That word is invalid!`, {
+                    title: `Uh oh`,
+                    variant: "danger",
+                    solid: true,
+                    toaster: "b-toaster-top-center",
+                });
+            }
+        },
     },
     watch: {
         possibleWords() {
@@ -509,6 +552,7 @@ export default {
                     }
                 );
             }
+            this.userFoundWords = [];
         },
         boardString(val) {
             window.localStorage.setItem(
@@ -600,6 +644,9 @@ export default {
             }
 
             return s;
+        },
+        guessedWordEntries() {
+            return this.userFoundWords.map((w) => [w, `(${score(w)}) ${w}`]);
         },
     },
 };
