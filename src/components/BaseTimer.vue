@@ -137,9 +137,9 @@ export default {
 <style>
 .base-timer {
   position: relative;
-  width: 40vh;
-  height: 40vh;
-  left: calc(50% - 20vh);
+  width: 60vh;
+  height: 60vh;
+  left: calc(50% - 30vh);
   cursor: pointer;
 }
 .base-timer__svg {
@@ -183,12 +183,12 @@ export default {
 
 .base-timer__label {
   position: absolute;
-  width: 40vh;
-  height: 40vh;
+  width: 60vh;
+  height: 60vh;
   top: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14.4vh;
+  font-size: 21.6vh;
 }
 </style>

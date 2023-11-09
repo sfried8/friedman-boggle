@@ -49,12 +49,21 @@
           </div>
         </div>
       </div>
+      <div v-if="timeIsUp">
+        <b-button
+          variant="primary"
+          :disabled="isShuffling || allowedDifficulties.length === 0"
+          @click="shuffleDice"
+          ><b-icon-shuffle></b-icon-shuffle>&nbsp;&nbsp;Shuffle</b-button
+        >
+      </div>
     </div>
     <div
+      v-show="!timeIsUp"
       style="
-        width: 25%;
+        width: 50%;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         justify-content: space-around;
       "
     >
@@ -76,7 +85,7 @@
           <div>Max Score: {{ possibleScore }}</div>
         </div>
         <br />
-        <div>
+        <!-- <div>
           <input
             type="checkbox"
             name="allowEasy"
@@ -97,7 +106,7 @@
             name="allowVeryHard"
             v-model="allowedDifficultyVeryHard"
           /><label for="allowVeryHard">Very Hard</label>
-        </div>
+        </div> -->
         <b-button
           variant="primary"
           :disabled="isShuffling || allowedDifficulties.length === 0"
@@ -130,8 +139,9 @@
     </div>
     <div
       v-if="dictionaryTrie"
+      v-show="timeIsUp"
       style="
-        width: 25%;
+        width: 50%;
         display: flex;
         flex-direction: column;
         justify-content: space-around;
@@ -142,19 +152,21 @@
         @submit-guess="submitGuess"
         :show-score="isValidScore"
       ></dictionary-tester>
-      <div style="max-height: 50vh; overflow-y: auto" ref="foundwords">
-        <b-list-group>
-          <b-list-group-item
-            v-for="w in guessedWordEntries"
-            @mouseenter="mouseEnterDictEntry(w[0])"
-            @mouseleave="mouseLeaveDictEntry"
-            :key="w[0]"
-            :id="'foundwords-entry-' + w[0]"
-          >
-            {{ w[1] }}
-          </b-list-group-item>
-        </b-list-group>
-      </div>
+      <b-collapse v-model="showGuessedWords">
+        <div style="max-height: 50vh; overflow-y: auto" ref="foundwords">
+          <b-list-group>
+            <b-list-group-item
+              v-for="w in guessedWordEntries"
+              @mouseenter="mouseEnterDictEntry(w[0])"
+              @mouseleave="mouseLeaveDictEntry"
+              :key="w[0]"
+              :id="'foundwords-entry-' + w[0]"
+            >
+              {{ w[1] }}
+            </b-list-group-item>
+          </b-list-group>
+        </div>
+      </b-collapse>
       <div>
         <b-button
           style="width: 100%"
@@ -295,10 +307,11 @@ export default {
       redoStack: [],
       allowedDifficultyEasy: true,
       allowedDifficultyNormal: true,
-      allowedDifficultyTough: true,
-      allowedDifficultyVeryHard: true,
+      allowedDifficultyTough: false,
+      allowedDifficultyVeryHard: false,
       isValidScore: false,
       userFoundWords: [],
+      timeIsUp: false,
     };
   },
   mounted() {
@@ -510,19 +523,19 @@ export default {
         this.difficultyRating = "No valid words found!";
       } else if (possibleWords.length < 10 || numCommon < 8) {
         this.difficultyRating = DIFFICULTY_RATING.VERY_HARD;
-      } else if (numCommon < 17) {
+      } else if (numCommon < 17 || possibleWords.length < 100) {
         this.difficultyRating = DIFFICULTY_RATING.TOUGH;
-      } else if (numCommon > 40) {
+      } else if (numCommon > 40 || possibleWords.length > 225) {
         this.difficultyRating = DIFFICULTY_RATING.EASY;
       } else {
         this.difficultyRating = DIFFICULTY_RATING.NORMAL;
       }
     },
     timerClicked() {
-      console.log("timer clicked");
       this.$refs.timer.pause();
     },
     resetClicked() {
+      this.timeIsUp = false;
       this.$refs.timer.startTimer();
     },
     getRandomAllowedDifficulty() {
@@ -559,6 +572,9 @@ export default {
       if (this.timesUpAudio !== null) {
         this.timesUpAudio.play();
       }
+      setTimeout(() => {
+        this.timeIsUp = true;
+      }, 1500);
     },
   },
   watch: {
@@ -662,11 +678,17 @@ export default {
     guessedWordEntries() {
       return this.userFoundWords.map((w) => [w, `(${score(w)}) ${w}`]);
     },
+    showGuessedWords() {
+      return !this.showBestWords;
+    },
   },
 };
 </script>
 
 <style>
+body {
+  font-size: 20pt;
+}
 .boggle-board-container {
   display: flex;
   flex-direction: row;
@@ -699,7 +721,6 @@ export default {
   background-color: rgb(85, 204, 151);
 }
 .boggle-cell-highlighted-start {
-  border: 3px solid #3787dd;
-  box-shadow: rgb(55, 135, 221) inset 0 0 16px 6px;
+  background-color: rgb(55, 135, 221);
 }
 </style>
