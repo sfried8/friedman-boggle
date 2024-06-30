@@ -1,5 +1,5 @@
 <template>
-  <div class="base-timer">
+  <div class="base-timer" @click="pause">
     <svg
       class="base-timer__svg"
       viewBox="0 0 100 100"
@@ -115,8 +115,8 @@ export default {
       this.$emit("timesup");
     },
     pause() {
-      console.log("paused");
       this.paused = !this.paused;
+      this.$emit("pause", this.paused);
     },
     startTimer() {
       this.timePassed = 0;

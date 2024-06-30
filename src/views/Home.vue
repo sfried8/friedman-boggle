@@ -27,6 +27,13 @@
             ><b-icon-plus></b-icon-plus>&nbsp; &nbsp; Upload Dictionary
             File</b-btn
           >
+          <span
+            >psst, download file&nbsp;
+            <a
+              href="https://drive.google.com/uc?id=1XIFdZukAcDRiDIOgR_rHpICrrgJbLBxV"
+              >here</a
+            ></span
+          >
         </div>
         <div style="margin: 10px">
           <b-btn variant="warning" @click="getWordListWithoutDefinitions"
