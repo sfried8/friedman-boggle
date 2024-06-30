@@ -7,5 +7,10 @@ export default defineConfig({
   plugins: [vue(), Components({
     resolvers: [BootstrapVueNextResolver()],
   }),],
+  esbuild: {
+    supported: {
+      'top-level-await': true
+    },
+  },
 })
 
