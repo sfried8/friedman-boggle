@@ -1,28 +1,14 @@
 <template>
   <div class="base-timer" @click="pause">
-    <svg
-      class="base-timer__svg"
-      viewBox="0 0 100 100"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg class="base-timer__svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
       <g class="base-timer__circle">
-        <circle
-          class="base-timer__path-elapsed"
-          cx="50"
-          cy="50"
-          r="45"
-        ></circle>
-        <path
-          :stroke-dasharray="circleDasharray"
-          class="base-timer__path-remaining"
-          :class="remainingPathColor"
-          d="
+        <circle class="base-timer__path-elapsed" cx="50" cy="50" r="45"></circle>
+        <path :stroke-dasharray="circleDasharray" class="base-timer__path-remaining" :class="remainingPathColor" d="
             M 50, 50
             m -45, 0
             a 45,45 0 1,0 90,0
             a 45,45 0 1,0 -90,0
-          "
-        ></path>
+          "></path>
       </g>
     </svg>
     <span class="base-timer__label">{{ formattedTimeLeft }}</span>
@@ -48,7 +34,7 @@ const COLOR_CODES = {
   },
 };
 
-const TIME_LIMIT = 180;
+const TIME_LIMIT = 5;
 
 export default {
   data() {
@@ -142,6 +128,7 @@ export default {
   left: calc(50% - 30vh);
   cursor: pointer;
 }
+
 .base-timer__svg {
   transform: scaleX(-1);
 }
@@ -165,6 +152,7 @@ export default {
   fill-rule: nonzero;
   stroke: currentColor;
 }
+
 .base-timer__path-remaining.green {
   color: rgb(65, 184, 131);
 }
@@ -176,6 +164,7 @@ export default {
 .base-timer__path-remaining.red {
   color: red;
 }
+
 .base-timer__path-remaining.grey {
   color: lightgrey;
   transition: color 0s;

@@ -8,11 +8,7 @@
             This will take a little while, but you'll only need to do it once!
           </div>
           <div>
-            <b-progress
-              :value="dictionaryUploadProgress"
-              :max="100"
-              animated
-            ></b-progress>
+            <b-progress :value="dictionaryUploadProgress" :max="100" animated></b-progress>
           </div>
         </div>
       </template>
@@ -23,57 +19,31 @@
       <div>{{ dictionaryMessage }}</div>
       <div v-if="dictionaryIsMissing">
         <div style="margin: 10px">
-          <b-btn variant="success" v-b-modal.uploadfile
-            ><b-icon-plus></b-icon-plus>&nbsp; &nbsp; Upload Dictionary
-            File</b-btn
-          >
-          <span
-            >psst, download file&nbsp;
-            <a
-              href="https://drive.google.com/uc?id=1XIFdZukAcDRiDIOgR_rHpICrrgJbLBxV"
-              >here</a
-            ></span
-          >
+          <BButton variant="success" v-b-modal.uploadfile><b-icon-plus></b-icon-plus>&nbsp; &nbsp; Upload Dictionary
+            File</BButton>
+          <span>psst, download file&nbsp;
+            <a href="https://drive.google.com/uc?id=1XIFdZukAcDRiDIOgR_rHpICrrgJbLBxV">here</a></span>
         </div>
         <div style="margin: 10px">
-          <b-btn variant="warning" @click="getWordListWithoutDefinitions"
-            ><b-icon-plus></b-icon-plus>&nbsp; &nbsp; Get words without
-            definitions</b-btn
-          >
+          <BButton variant="warning" @click="getWordListWithoutDefinitions"><b-icon-plus></b-icon-plus>&nbsp; &nbsp; Get
+            words without
+            definitions</BButton>
         </div>
         <div style="margin: 10px">
-          <b-btn @click="goToGame">Play Boggle without Dictionary</b-btn>
+          <BButton @click="goToGame">Play Boggle without Dictionary</BButton>
         </div>
-        <b-modal
-          id="uploadfile"
-          title="Upload Dictionary File"
-          @ok="fileChange"
-          @cancel="pendingFile = null"
-          :ok-disabled="!pendingFile"
-        >
-          <b-form-file
-            v-if="!dictionaryIsLoading"
-            @change="(f) => (pendingFile = f.target.files[0])"
-          ></b-form-file>
+        <b-modal id="uploadfile" title="Upload Dictionary File" @ok="fileChange" @cancel="pendingFile = null"
+          :ok-disabled="!pendingFile">
+          <b-form-file v-if="!dictionaryIsLoading" @change="(f) => (pendingFile = f.target.files[0])"></b-form-file>
         </b-modal>
       </div>
       <div v-else>
-        <b-btn
-          variant="success"
-          :disabled="dictionaryIsLoading"
-          @click="goToGame"
-        >
-          Play Boggle</b-btn
-        >
+        <BButton variant="success" :disabled="dictionaryIsLoading" @click="goToGame">
+          Play Boggle</BButton>
         <br />
         <br />
-        <b-btn
-          variant="success"
-          :disabled="dictionaryIsLoading"
-          @click="$router.push('bee')"
-        >
-          NYT Spelling Bee</b-btn
-        >
+        <BButton variant="success" :disabled="dictionaryIsLoading" @click="$router.push('bee')">
+          NYT Spelling Bee</BButton>
       </div>
     </div>
   </div>

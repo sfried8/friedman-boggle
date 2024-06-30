@@ -2,84 +2,50 @@
   <div class="boggle-board-container">
     <div>
       <div class="boggle-board">
-        <div
-          :style="'position:absolute; ' + rotationTransform"
-          v-for="rotationTransform in arrowTransforms"
-          :key="rotationTransform"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="#3787dd"
-            stroke="#ffffff"
-            style="
+        <div :style="'position:absolute; ' + rotationTransform" v-for="rotationTransform in arrowTransforms"
+          :key="rotationTransform">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#3787dd"
+            stroke="#ffffff" style="
               position: absolute;
               top: -12px;
               left: -12px;
               filter: drop-shadow(0px 0px 3px #3787dd);
-            "
-          >
+            ">
             <!-- <path d="M24 12l-11-8v6h-13v4h13v6z" /> -->
             <path
-              d="m15.27047,4.85435l-1.84942,1.83708l4.01196,4.01196l-15.8329,0l0,2.59322l15.8329,0l-4.01196,4.01196l1.84942,1.83709l7.12941,-7.14566l-7.12941,-7.14565z"
-            />
+              d="m15.27047,4.85435l-1.84942,1.83708l4.01196,4.01196l-15.8329,0l0,2.59322l15.8329,0l-4.01196,4.01196l1.84942,1.83709l7.12941,-7.14566l-7.12941,-7.14565z" />
           </svg>
         </div>
-        <div
-          class="boggle-row"
-          :key="JSON.stringify(row) + rowIndex"
-          v-for="(row, rowIndex) in rows"
-        >
-          <div
-            :class="{
-              'boggle-cell': true,
-              'boggle-cell-highlighted':
-                highlightedCells[letterIndex][rowIndex],
-              'boggle-cell-highlighted-start':
-                letterIndex === highlightStart[0] &&
-                rowIndex === highlightStart[1],
-            }"
-            :key="letter + letterIndex"
-            v-for="(letter, letterIndex) in row"
-          >
+        <div class="boggle-row" :key="JSON.stringify(row) + rowIndex" v-for="(row, rowIndex) in rows">
+          <div :class="{
+            'boggle-cell': true,
+            'boggle-cell-highlighted':
+              highlightedCells[letterIndex][rowIndex],
+            'boggle-cell-highlighted-start':
+              letterIndex === highlightStart[0] &&
+              rowIndex === highlightStart[1],
+          }" :key="letter + letterIndex" v-for="(letter, letterIndex) in row">
             {{ hidden ? "&nbsp;" : letter
-            }}<span v-if="!hidden && letter === 'Q'" class="boggle-cell-qu"
-              >u</span
-            >
+            }}<span v-if="!hidden && letter === 'Q'" class="boggle-cell-qu">u</span>
           </div>
         </div>
       </div>
       <input type="checkbox" v-model="hidden" />
       <div v-if="timeIsUp">
-        <b-button
-          variant="primary"
-          :disabled="isShuffling || allowedDifficulties.length === 0"
-          @click="shuffleDice"
-          ><b-icon-shuffle></b-icon-shuffle>&nbsp;&nbsp;Shuffle</b-button
-        >
+        <BButton variant="primary" :disabled="isShuffling || allowedDifficulties.length === 0" @click="shuffleDice">
+          <b-icon-shuffle></b-icon-shuffle>&nbsp;&nbsp;Shuffle</BButton>
       </div>
     </div>
-    <div
-      v-show="!timeIsUp"
-      style="
+    <div v-show="!timeIsUp" style="
         width: 50%;
         display: flex;
         flex-direction: row;
         justify-content: space-around;
-      "
-    >
+      ">
       <div>
-        <base-timer
-          ref="timer"
-          @timesup="playTimesUp"
-          @pause="(paused) => (hidden = paused)"
-        ></base-timer>
-        <b-button @click="resetClicked"
-          ><b-icon-arrow-clockwise></b-icon-arrow-clockwise>&nbsp;&nbsp;Restart
-          Timer</b-button
-        >
+        <base-timer ref="timer" @timesup="playTimesUp" @pause="(paused) => (hidden = paused)"></base-timer>
+        <BButton @click="resetClicked"><b-icon-arrow-clockwise></b-icon-arrow-clockwise>&nbsp;&nbsp;Restart
+          Timer</BButton>
       </div>
       <div>
         <div v-if="!isShuffling">
@@ -110,86 +76,50 @@
             v-model="allowedDifficultyVeryHard"
           /><label for="allowVeryHard">Very Hard</label>
         </div> -->
-        <b-button
-          variant="primary"
-          :disabled="isShuffling || allowedDifficulties.length === 0"
-          @click="shuffleDice"
-          ><b-icon-shuffle></b-icon-shuffle>&nbsp;&nbsp;Shuffle</b-button
-        >
+        <BButton variant="primary" :disabled="isShuffling || allowedDifficulties.length === 0" @click="shuffleDice">
+          <b-icon-shuffle></b-icon-shuffle>&nbsp;&nbsp;Shuffle</BButton>
         <br />
-        <b-button
-          variant="primary"
-          :disabled="isShuffling || !undoStack.length"
-          @click="undo"
-          ><b-icon-arrow-left-short></b-icon-arrow-left-short
-          >&nbsp;&nbsp;</b-button
-        >
-        <b-button
-          variant="primary"
-          :disabled="isShuffling || !redoStack.length"
-          @click="redo"
-          ><b-icon-arrow-right-short></b-icon-arrow-right-short
-          >&nbsp;&nbsp;</b-button
-        >
-        <!-- <b-button
+        <BButton variant="primary" :disabled="isShuffling || !undoStack.length" @click="undo">
+          <b-icon-arrow-left-short></b-icon-arrow-left-short>&nbsp;&nbsp;</BButton>
+        <BButton variant="primary" :disabled="isShuffling || !redoStack.length" @click="redo">
+          <b-icon-arrow-right-short></b-icon-arrow-right-short>&nbsp;&nbsp;</BButton>
+        <!-- <BButton
                     variant="primary"
                     :disabled="isShuffling"
                     @click="shuffleOnce"
                     ><b-icon-shuffle></b-icon-shuffle>&nbsp;&nbsp;Shuffle
-                    Once</b-button
+                    Once</BButton
                 > -->
       </div>
     </div>
-    <div
-      v-if="dictionaryTrie"
-      v-show="timeIsUp"
-      style="
+    <div v-if="dictionaryTrie" v-show="timeIsUp" style="
         width: 50%;
         display: flex;
         flex-direction: column;
         justify-content: space-around;
-      "
-    >
-      <dictionary-tester
-        @changeword="changeWord"
-        @submit-guess="submitGuess"
-        :show-score="isValidScore"
-        :force-definition="hoveredWord"
-      ></dictionary-tester>
+      ">
+      <dictionary-tester @changeword="changeWord" @submit-guess="submitGuess" :show-score="isValidScore"
+        :force-definition="hoveredWord"></dictionary-tester>
       <b-collapse v-model="showGuessedWords">
         <div style="max-height: 50vh; overflow-y: auto" ref="foundwords">
           <b-list-group>
-            <b-list-group-item
-              v-for="w in guessedWordEntries"
-              @mouseenter="mouseEnterDictEntry(w[0])"
-              @mouseleave="mouseLeaveDictEntry"
-              :key="w[0]"
-              :id="'foundwords-entry-' + w[0]"
-            >
+            <b-list-group-item v-for="w in guessedWordEntries" @mouseenter="mouseEnterDictEntry(w[0])"
+              @mouseleave="mouseLeaveDictEntry" :key="w[0]" :id="'foundwords-entry-' + w[0]">
               {{ w[1] }}
             </b-list-group-item>
           </b-list-group>
         </div>
       </b-collapse>
       <div>
-        <b-button
-          style="width: 100%"
-          variant="outline-secondary"
-          @click="showBestWords = !showBestWords"
-        >
+        <BButton style="width: 100%" variant="outline-secondary" @click="showBestWords = !showBestWords">
           <b-icon :icon="'chevron-' + (showBestWords ? 'up' : 'down')"></b-icon>
           {{ (showBestWords ? " Hide" : " Show") + " best words" }}
-        </b-button>
+        </BButton>
         <b-collapse v-model="showBestWords">
           <b-list-group>
-            <b-list-group-item
-              v-for="w in bestWords"
-              :variant="userFoundWords.includes(w) ? 'success' : ''"
-              @mouseenter="mouseEnterDictEntry(w)"
-              @mouseleave="mouseLeaveDictEntry"
-              :key="w"
-              :id="'bestwords-entry-' + w"
-            >
+            <b-list-group-item v-for="w in bestWords" :variant="userFoundWords.includes(w) ? 'success' : ''"
+              @mouseenter="mouseEnterDictEntry(w)" @mouseleave="mouseLeaveDictEntry" :key="w"
+              :id="'bestwords-entry-' + w">
               {{ w }}
               <!-- <dictionary-entry-popover
                 :target="'bestwords-entry-' + w"
@@ -209,6 +139,8 @@ import { BoggleWords } from "../boggle_solver";
 import BaseTimer from "./BaseTimer.vue";
 import DictionaryTester from "./DictionaryTester.vue";
 import Dictionary from "../Dictionary";
+import timesup from "../assets/timesup.wav"
+import buzzer from "../assets/ffbuzzer.mp3"
 
 const BOGGLE_DICE = [
   "AAEEGN",
@@ -332,11 +264,11 @@ export default {
   },
   methods: {
     async initializeFeliz() {
-      const buzzerAudio = new Audio(require("@/assets/ffbuzzer.mp3"));
+      const buzzerAudio = new Audio(buzzer);
       buzzerAudio.addEventListener("canplaythrough", () => {
         this.buzzerAudio = buzzerAudio;
       });
-      const timesUpAudio = new Audio(require("@/assets/timesup.wav"));
+      const timesUpAudio = new Audio(timesup);
       timesUpAudio.addEventListener("canplaythrough", () => {
         this.timesUpAudio = timesUpAudio;
       });
@@ -372,9 +304,8 @@ export default {
       } else if (dX === 1) {
         rotation = "rotate(" + [315, 0, 45][dY + 1] + "deg)";
       }
-      return `transform: translate(${19 * lastPosition[0] + 10 * (dX + 1)}vh, ${
-        20 * lastPosition[1] + 10 * (dY + 1)
-      }vh) ${rotation} scale(3);`;
+      return `transform: translate(${19 * lastPosition[0] + 10 * (dX + 1)}vh, ${20 * lastPosition[1] + 10 * (dY + 1)
+        }vh) ${rotation} scale(3);`;
     },
     changeWord(w) {
       this.hoveredWord = "";
