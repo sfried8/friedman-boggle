@@ -1,13 +1,13 @@
 <template>
   <div>
-    <div v-if="dictionaryIsInitialized">
+    <div class="dictionary-tester" v-if="dictionaryIsInitialized">
       <b-form-input
         @submit="submit"
         @keypress.enter="submit"
         placeholder="Check Dictionary"
         v-model="query"
       />
-      <div>{{ definition }}</div>
+      <div class="definition">{{ definitionToShow }}</div>
       <div class="point-total">{{ pointTotal }}</div>
     </div>
     <div v-else-if="needsDictionaryUpload">
@@ -26,11 +26,12 @@
 <script>
 import Dictionary from "../Dictionary";
 export default {
-  props: ["show-score"],
+  props: ["show-score", "force-definition"],
   data() {
     return {
       query: "",
       definition: "",
+      overriddenDefinition: "",
       loadingMessage: "Loading dictionary data...",
       dictionaryIsInitialized: false,
       needsDictionaryUpload: false,
@@ -65,10 +66,19 @@ export default {
       this.$emit("changeword", this.query.toUpperCase());
       Dictionary.getDefinition(this.query).then((d) => (this.definition = d));
     },
+    forceDefinition() {
+      if (this.forceDefinition) {
+        Dictionary.getDefinition(this.forceDefinition).then(
+          (d) => (this.overriddenDefinition = d)
+        );
+      } else {
+        this.overriddenDefinition = "";
+      }
+    },
   },
   computed: {
     pointTotal() {
-      if (this.definition && this.showScore) {
+      if (this.showScore && !this.forceDefinition) {
         const qLen = this.query.length;
         if (qLen < 4) {
           return "0";
@@ -91,6 +101,9 @@ export default {
       }
       return "";
     },
+    definitionToShow() {
+      return this.overriddenDefinition || this.definition;
+    },
   },
 };
 </script>
@@ -98,5 +111,9 @@ export default {
 <style>
 .point-total {
   font-size: 3rem;
+}
+.dictionary-tester {
+  height: 30vh;
+  overflow-y: auto;
 }
 </style>

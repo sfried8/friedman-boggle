@@ -35,10 +35,15 @@ const uploadWords = async (wordsAndDefinitions, progressCallback) => {
 
   let newEntries = [];
   const numWords = wordsAndDefinitions.length;
-
+  let longestDefinition = 0;
+  let wordWithLongDef = "";
   for (const line of wordsAndDefinitions) {
     const { word, definition } = line;
     const isCommon = commonWords.has(word.toLowerCase());
+    if (definition.length > longestDefinition) {
+      longestDefinition = definition.length;
+      wordWithLongDef = word;
+    }
     newEntries.push({ word, definition, isCommon });
     wordsArr.push(word);
     if (newEntries.length > 10000) {
@@ -48,6 +53,7 @@ const uploadWords = async (wordsAndDefinitions, progressCallback) => {
     }
   }
   await _db.words.bulkAdd(newEntries);
+  console.log("longest def: " + wordWithLongDef);
   localStorage.setItem("words", JSON.stringify(wordsArr));
   _dictionaryTrie = new MakeTrie(new Set(wordsArr));
 };
@@ -77,7 +83,11 @@ export default {
   uploadDictionary: async (file, progressCallback) => {
     // await indexDictionary();
     const wordsStr = await file.text();
-    const wordsAndDefinitions = wordsStr.split("\r\n").map((line) => {
+    const lines = wordsStr.split("\r\n");
+    if (lines[0].startsWith("Collins")) {
+      lines.splice(0, 2);
+    }
+    const wordsAndDefinitions = lines.map((line) => {
       const [word, definition] = line.split("\t");
       return { word, definition };
     });

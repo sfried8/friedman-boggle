@@ -151,9 +151,10 @@
       "
     >
       <dictionary-tester
-        @changeword="mouseEnterDictEntry"
+        @changeword="changeWord"
         @submit-guess="submitGuess"
         :show-score="isValidScore"
+        :force-definition="hoveredWord"
       ></dictionary-tester>
       <b-collapse v-model="showGuessedWords">
         <div style="max-height: 50vh; overflow-y: auto" ref="foundwords">
@@ -177,7 +178,7 @@
           @click="showBestWords = !showBestWords"
         >
           <b-icon :icon="'chevron-' + (showBestWords ? 'up' : 'down')"></b-icon>
-          {{ (showBestWords ? "  Hide" : "  Show") + " best words" }}
+          {{ (showBestWords ? " Hide" : " Show") + " best words" }}
         </b-button>
         <b-collapse v-model="showBestWords">
           <b-list-group>
@@ -190,11 +191,11 @@
               :id="'bestwords-entry-' + w"
             >
               {{ w }}
-              <dictionary-entry-popover
+              <!-- <dictionary-entry-popover
                 :target="'bestwords-entry-' + w"
                 :word="w"
               >
-              </dictionary-entry-popover>
+              </dictionary-entry-popover> -->
             </b-list-group-item>
           </b-list-group>
         </b-collapse>
@@ -206,7 +207,6 @@
 <script>
 import { BoggleWords } from "../boggle_solver";
 import BaseTimer from "./BaseTimer.vue";
-import DictionaryEntryPopover from "./DictionaryEntryPopover.vue";
 import DictionaryTester from "./DictionaryTester.vue";
 import Dictionary from "../Dictionary";
 
@@ -280,7 +280,6 @@ export default {
   components: {
     BaseTimer,
     DictionaryTester,
-    DictionaryEntryPopover,
   },
   data() {
     return {
@@ -316,6 +315,7 @@ export default {
       isValidScore: false,
       userFoundWords: [],
       timeIsUp: false,
+      hoveredWord: "",
     };
   },
   mounted() {
@@ -376,39 +376,51 @@ export default {
         20 * lastPosition[1] + 10 * (dY + 1)
       }vh) ${rotation} scale(3);`;
     },
+    changeWord(w) {
+      this.hoveredWord = "";
+      this.updateDefinedWord(w);
+      if (this.userFoundWords.includes(w)) {
+        document.getElementById("foundwords-entry-" + w).scrollIntoView(true);
+      } else {
+        this.$refs.foundwords.scrollTop = this.$refs.foundwords.scrollHeight;
+      }
+    },
+    updateDefinedWord(w) {
+      this.mouseLeaveDictEntry();
+      if (this.possibleWords[w]) {
+        this.isValidScore = true;
+        for (const location of this.possibleWords[w]) {
+          this.highlightedCells[location[0]][location[1]] = true;
+          this.highlightedCells = JSON.parse(
+            JSON.stringify(this.highlightedCells)
+          );
+        }
+        this.highlightStart = [...this.possibleWords[w][1]];
+        let lastPosition = this.highlightStart;
+        for (let i = 2; i < this.possibleWords[w].length; i++) {
+          const currentPosition = this.possibleWords[w][i];
+          // if (currentPosition[0] < )
+          this.arrowTransforms.push(
+            this.getTransformForPositions(lastPosition, currentPosition)
+          );
+          lastPosition = currentPosition;
+        }
+        this.arrowTransforms.push(
+          this.getTransformForPositions(lastPosition, this.possibleWords[w][0])
+        );
+      } else {
+        this.isValidScore = false;
+      }
+    },
     mouseEnterDictEntry(w) {
+      this.hoveredWord = w;
       setTimeout(() => {
         this.mouseLeaveDictEntry();
-        if (this.possibleWords[w]) {
-          this.isValidScore = true;
-          for (const location of this.possibleWords[w]) {
-            this.highlightedCells[location[0]][location[1]] = true;
-            this.highlightedCells = JSON.parse(
-              JSON.stringify(this.highlightedCells)
-            );
-          }
-          this.highlightStart = [...this.possibleWords[w][1]];
-          let lastPosition = this.highlightStart;
-          for (let i = 2; i < this.possibleWords[w].length; i++) {
-            const currentPosition = this.possibleWords[w][i];
-            // if (currentPosition[0] < )
-            this.arrowTransforms.push(
-              this.getTransformForPositions(lastPosition, currentPosition)
-            );
-            lastPosition = currentPosition;
-          }
-          this.arrowTransforms.push(
-            this.getTransformForPositions(
-              lastPosition,
-              this.possibleWords[w][0]
-            )
-          );
-        } else {
-          this.isValidScore = false;
-        }
+        this.updateDefinedWord(w);
       }, 0);
     },
     mouseLeaveDictEntry() {
+      // this.hoveredWord = "";
       this.highlightedCells = [
         [false, false, false, false],
         [false, false, false, false],
@@ -456,7 +468,7 @@ export default {
         this.commonWords = commonWords;
         this.updateDifficulty();
         const difficultyBacklog = backlog[this.difficultyRating];
-        if (difficultyBacklog.length < 20) {
+        if (difficultyBacklog && difficultyBacklog.length < 20) {
           difficultyBacklog.push(currentBoardString);
         }
 
@@ -698,11 +710,13 @@ export default {
 body {
   font-size: 20pt;
 }
+
 .boggle-board-container {
   display: flex;
   flex-direction: row;
   justify-content: space-evenly;
 }
+
 .boggle-board {
   font-size: 14.4vh;
   vertical-align: middle;
@@ -710,6 +724,7 @@ body {
   height: 80vh;
   margin: 0 5vh 5vh 5vh;
 }
+
 .boggle-row {
   display: flex;
   flex-direction: row;
@@ -718,17 +733,21 @@ body {
   line-height: 133%;
   /* height: calc(25% - 6px); */
 }
+
 .boggle-cell {
   width: calc(25% - 6px);
   /* height: calc(100% - 6px); */
   border: 3px solid grey;
 }
+
 .boggle-cell-qu {
   font-size: 12.5vh;
 }
+
 .boggle-cell-highlighted {
   background-color: rgb(85, 204, 151);
 }
+
 .boggle-cell-highlighted-start {
   background-color: rgb(55, 135, 221);
 }
