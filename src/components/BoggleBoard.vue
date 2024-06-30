@@ -44,11 +44,14 @@
             :key="letter + letterIndex"
             v-for="(letter, letterIndex) in row"
           >
-            {{ letter
-            }}<span v-if="letter === 'Q'" class="boggle-cell-qu">u</span>
+            {{ hidden ? "&nbsp;" : letter
+            }}<span v-if="!hidden && letter === 'Q'" class="boggle-cell-qu"
+              >u</span
+            >
           </div>
         </div>
       </div>
+      <input type="checkbox" v-model="hidden" />
       <div v-if="timeIsUp">
         <b-button
           variant="primary"
@@ -70,8 +73,8 @@
       <div>
         <base-timer
           ref="timer"
-          @click="timerClicked"
           @timesup="playTimesUp"
+          @pause="(paused) => (hidden = paused)"
         ></base-timer>
         <b-button @click="resetClicked"
           ><b-icon-arrow-clockwise></b-icon-arrow-clockwise>&nbsp;&nbsp;Restart
@@ -287,6 +290,7 @@ export default {
         ["B", "O", "G", "G"],
         ["L", "E", "!", "!"],
       ],
+      hidden: false,
       dictionaryTrie: false,
       feliz: null,
       buzzerAudio: null,
@@ -428,10 +432,12 @@ export default {
       }
     },
     async shuffleDice() {
+      this.hidden = false;
       this.difficultyRating = "";
       this.isShuffling = true;
       this.resetClicked();
-      this.timerClicked();
+      this.$refs.timer.paused = true;
+      // this.timerClicked();
       this.redoStack = [];
       this.undoStack.push(this.boardString);
       if (this.feliz) {
@@ -486,7 +492,7 @@ export default {
         console.log(w + " (" + score(w) + ")");
       });
       // this.shuffleOnce();
-      this.timerClicked();
+      this.$refs.timer.startTimer();
       // window.localStorage.setItem(J);
       // this.difficultyRating = numCommon + "/" + possibleWords.length;
     },
@@ -531,9 +537,7 @@ export default {
         this.difficultyRating = DIFFICULTY_RATING.NORMAL;
       }
     },
-    timerClicked() {
-      this.$refs.timer.pause();
-    },
+
     resetClicked() {
       this.timeIsUp = false;
       this.$refs.timer.startTimer();
@@ -678,8 +682,13 @@ export default {
     guessedWordEntries() {
       return this.userFoundWords.map((w) => [w, `(${score(w)}) ${w}`]);
     },
-    showGuessedWords() {
-      return !this.showBestWords;
+    showGuessedWords: {
+      get() {
+        return !this.showBestWords;
+      },
+      set(newValue) {
+        this.showBestWords = !newValue;
+      },
     },
   },
 };
