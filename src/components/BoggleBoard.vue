@@ -274,7 +274,7 @@ export default {
       });
       return new Promise((res) => {
         const felizAudio = new Audio(
-          "https://ia903102.us.archive.org/16/items/cd_feliz-navidad_various-artists-alvaro-torres-angela-carra/disc1/01.%20Jos%C3%A9%20Feliciano%20-%20Feliz%20Navidad_sample.mp3"
+          "https://ia801208.us.archive.org/20/items/ChristmasSongsFelizNavidad1/Christmas%20Songs%20-%20Feliz%20Navidad%281%29.mp3"
         );
         felizAudio.addEventListener("canplaythrough", () => {
           this.feliz = felizAudio;
