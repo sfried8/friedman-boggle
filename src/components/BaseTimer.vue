@@ -34,7 +34,7 @@ const COLOR_CODES = {
   },
 };
 
-const TIME_LIMIT = 180;
+const TIME_LIMIT = 3;
 
 export default {
   data() {

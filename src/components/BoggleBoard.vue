@@ -33,7 +33,8 @@
       <input type="checkbox" v-model="hidden" />
       <div v-if="timeIsUp">
         <BButton variant="primary" :disabled="isShuffling || allowedDifficulties.length === 0" @click="shuffleDice">
-          <b-icon-shuffle></b-icon-shuffle>&nbsp;&nbsp;Shuffle</BButton>
+          <IBiShuffle></IBiShuffle>&nbsp;&nbsp;Shuffle
+        </BButton>
       </div>
     </div>
     <div v-show="!timeIsUp" style="
@@ -44,12 +45,12 @@
       ">
       <div>
         <base-timer ref="timer" @timesup="playTimesUp" @pause="(paused) => (hidden = paused)"></base-timer>
-        <BButton @click="resetClicked"><b-icon-arrow-clockwise></b-icon-arrow-clockwise>&nbsp;&nbsp;Restart
+        <BButton @click="resetClicked"><i-bi-arrow-clockwise></i-bi-arrow-clockwise>&nbsp;&nbsp;Restart
           Timer</BButton>
       </div>
       <div>
         <div v-if="!isShuffling">
-          <div>Difficulty: {{ difficultyRating }}</div>
+          <div>Difficulty: {{ difficultyRating }} ({{ Math.round(scoreEvaluation) }})</div>
           <div>Possible Words: {{ numPossible }}</div>
           <div>Max Score: {{ possibleScore }}</div>
         </div>
@@ -77,12 +78,15 @@
           /><label for="allowVeryHard">Very Hard</label>
         </div> -->
         <BButton variant="primary" :disabled="isShuffling || allowedDifficulties.length === 0" @click="shuffleDice">
-          <b-icon-shuffle></b-icon-shuffle>&nbsp;&nbsp;Shuffle</BButton>
+          <IBiShuffle></IBiShuffle>&nbsp;&nbsp;Shuffle
+        </BButton>
         <br />
         <BButton variant="primary" :disabled="isShuffling || !undoStack.length" @click="undo">
-          <b-icon-arrow-left-short></b-icon-arrow-left-short>&nbsp;&nbsp;</BButton>
+          <i-bi-arrow-left-short></i-bi-arrow-left-short>&nbsp;&nbsp;
+        </BButton>
         <BButton variant="primary" :disabled="isShuffling || !redoStack.length" @click="redo">
-          <b-icon-arrow-right-short></b-icon-arrow-right-short>&nbsp;&nbsp;</BButton>
+          <i-bi-arrow-right-short></i-bi-arrow-right-short>&nbsp;&nbsp;
+        </BButton>
         <!-- <BButton
                     variant="primary"
                     :disabled="isShuffling"
@@ -112,7 +116,8 @@
       </b-collapse>
       <div>
         <BButton style="width: 100%" variant="outline-secondary" @click="showBestWords = !showBestWords">
-          <b-icon :icon="'chevron-' + (showBestWords ? 'up' : 'down')"></b-icon>
+          <IBiChevronUp v-if="showBestWords"></IBiChevronUp>
+          <IBiChevronDown v-else></IBiChevronDown>
           {{ (showBestWords ? " Hide" : " Show") + " best words" }}
         </BButton>
         <b-collapse v-model="showBestWords">
@@ -207,6 +212,58 @@ function score(word) {
     return 11;
   }
 }
+const getDirectionFromDXY = (dx, dy) => {
+  if (dx === -1) {
+    switch (dy) {
+      case -1:
+        return 7
+      case 0:
+        return 6
+      case 1:
+        return 5
+    }
+  } else if (dx == 0) {
+    switch (dy) {
+      case -1:
+        return 0
+      case 0:
+        return 0
+      case 1:
+        return 4
+    }
+  } else if (dx == 1) {
+    switch (dy) {
+      case -1:
+        return 1
+      case 0:
+        return 2
+      case 1:
+        return 3
+    }
+  }
+}
+const getDirectionSharpness = (dir1, dir2) => {
+  let diff = Math.abs(dir2 - dir1)
+  if (diff > 4) {
+    diff = 8 - diff
+  }
+  return diff
+}
+function tangledScore(locations) {
+  let lastDirection = 0
+  let tangledness = 1
+  for (let i = 1; i < locations.length; i++) {
+    const dx = locations[(i + 1) % locations.length][0] - locations[i][0]
+    const dy = locations[(i + 1) % locations.length][1] - locations[i][1]
+    const direction = getDirectionFromDXY(dx, dy)
+    if (i > 1) {
+      const sharpness = 1 - (getDirectionSharpness(direction, lastDirection) / 4)
+      tangledness *= sharpness
+    }
+    lastDirection = direction
+  }
+  return tangledness
+}
 let dictionaryTrie = null;
 export default {
   components: {
@@ -230,6 +287,7 @@ export default {
       isShuffling: false,
       commonWords: [],
       difficultyRating: "",
+      scoreEvaluation: 0,
       highlightedCells: [
         [false, false, false, false],
         [false, false, false, false],
@@ -397,7 +455,7 @@ export default {
           Object.keys(this.possibleWords)
         );
         this.commonWords = commonWords;
-        this.updateDifficulty();
+        await this.updateDifficulty();
         const difficultyBacklog = backlog[this.difficultyRating];
         if (difficultyBacklog && difficultyBacklog.length < 20) {
           difficultyBacklog.push(currentBoardString);
@@ -413,7 +471,7 @@ export default {
           Object.keys(this.possibleWords)
         );
         this.commonWords = commonWords;
-        this.updateDifficulty();
+        await this.updateDifficulty();
         if (!this.allowedDifficulties.includes(this.difficultyRating)) {
           const nextBoard = backlog[this.getRandomAllowedDifficulty()].pop();
           if (nextBoard) {
@@ -431,9 +489,7 @@ export default {
         this.feliz.pause();
       }
       this.isShuffling = false;
-      Object.keys(this.possibleWords).forEach((w) => {
-        console.log(w + " (" + score(w) + ")");
-      });
+
       // this.shuffleOnce();
       this.$refs.timer.startTimer();
       // window.localStorage.setItem(J);
@@ -459,22 +515,23 @@ export default {
       }
       this.rows = newRows;
     },
-    updateDifficulty() {
+    async updateDifficulty() {
       if (!this.dictionaryTrie) {
         this.difficultyRating = "";
         return;
       }
-      const possibleWords = Object.keys(this.possibleWords).filter(
-        (w) => w.length > 3
-      );
-      let numCommon = this.commonWords.filter((w) => w.length > 3).length;
-      if (possibleWords.length < 1) {
+      const ngrammap = new Map()
+      await Promise.all(Object.keys(this.possibleWords).map(w => Dictionary.getNGram(w).then(ng => ngrammap.set(w, ng || 0))))
+      const allkeys = Object.keys(this.possibleWords).sort((a, b) => tangledScore(this.possibleWords[a]) * ngrammap.get(a) - tangledScore(this.possibleWords[b]) * ngrammap.get(b))
+
+      this.scoreEvaluation = allkeys.reduce((acc, cur) => acc + Math.log(Math.max(1, tangledScore(this.possibleWords[cur]) * ngrammap.get(cur))), 0)
+      if (allkeys.length < 1) {
         this.difficultyRating = "No valid words found!";
-      } else if (possibleWords.length < 10 || numCommon < 8) {
+      } else if (this.scoreEvaluation < 500) {
         this.difficultyRating = DIFFICULTY_RATING.VERY_HARD;
-      } else if (numCommon < 17 || possibleWords.length < 100) {
+      } else if (this.scoreEvaluation < 900) {
         this.difficultyRating = DIFFICULTY_RATING.TOUGH;
-      } else if (numCommon > 40 || possibleWords.length > 225) {
+      } else if (this.scoreEvaluation > 1300) {
         this.difficultyRating = DIFFICULTY_RATING.EASY;
       } else {
         this.difficultyRating = DIFFICULTY_RATING.NORMAL;
@@ -529,7 +586,7 @@ export default {
       if (!this.isShuffling) {
         Dictionary.getCommon(Object.keys(this.possibleWords)).then((c) => {
           this.commonWords = c;
-          this.updateDifficulty();
+          return this.updateDifficulty();
         });
       }
       this.userFoundWords = [];
