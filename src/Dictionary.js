@@ -30,7 +30,14 @@ const uploadWords = async (wordsAndDefinitions, progressCallback) => {
       ).text()
     ).split("\n")
   );
-
+  const ngrams = await (await fetch('/ngram_freq_dict.csv')).text()
+  const ngramMap = new Map()
+  ngrams.split("\n").forEach(line => {
+    const [word, value] = line.split(',')
+    if (!isNaN(value)) {
+      ngramMap.set(word.toUpperCase(), +value)
+    }
+  })
   const wordsArr = [];
 
   let newEntries = [];
@@ -44,7 +51,7 @@ const uploadWords = async (wordsAndDefinitions, progressCallback) => {
       longestDefinition = definition.length;
       wordWithLongDef = word;
     }
-    newEntries.push({ word, definition, isCommon });
+    newEntries.push({ word, definition, isCommon, ngram: ngramMap.get(word) });
     wordsArr.push(word);
     if (newEntries.length > 10000) {
       await _db.words.bulkAdd(newEntries);
@@ -164,6 +171,20 @@ export default {
         .equalsIgnoreCase(word)
         .first();
       return entry.definition;
+    } catch (error) {
+      return;
+    }
+  },
+  getNGram: async (word) => {
+    if (!_db) {
+      await indexDictionary();
+    }
+    try {
+      const entry = await _db.words
+        .where("word")
+        .equalsIgnoreCase(word)
+        .first();
+      return entry.ngram;
     } catch (error) {
       return;
     }

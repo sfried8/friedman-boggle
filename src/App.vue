@@ -1,7 +1,5 @@
 <template>
-  <div id="app">
-    <router-view />
-  </div>
+  <router-view />
 </template>
 
 <style>
@@ -11,19 +9,18 @@
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 5vh;
 }
 
-#nav {
+nav {
   padding: 30px;
 }
 
-#nav a {
+nav a {
   font-weight: bold;
   color: #2c3e50;
 }
 
-#nav a.router-link-exact-active {
+nav a.router-link-exact-active {
   color: #42b983;
 }
 </style>

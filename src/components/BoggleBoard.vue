@@ -2,88 +2,55 @@
   <div class="boggle-board-container">
     <div>
       <div class="boggle-board">
-        <div
-          :style="'position:absolute; ' + rotationTransform"
-          v-for="rotationTransform in arrowTransforms"
-          :key="rotationTransform"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="#3787dd"
-            stroke="#ffffff"
-            style="
+        <div :style="'position:absolute; ' + rotationTransform" v-for="rotationTransform in arrowTransforms"
+          :key="rotationTransform">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#3787dd"
+            stroke="#ffffff" style="
               position: absolute;
               top: -12px;
               left: -12px;
               filter: drop-shadow(0px 0px 3px #3787dd);
-            "
-          >
+            ">
             <!-- <path d="M24 12l-11-8v6h-13v4h13v6z" /> -->
             <path
-              d="m15.27047,4.85435l-1.84942,1.83708l4.01196,4.01196l-15.8329,0l0,2.59322l15.8329,0l-4.01196,4.01196l1.84942,1.83709l7.12941,-7.14566l-7.12941,-7.14565z"
-            />
+              d="m15.27047,4.85435l-1.84942,1.83708l4.01196,4.01196l-15.8329,0l0,2.59322l15.8329,0l-4.01196,4.01196l1.84942,1.83709l7.12941,-7.14566l-7.12941,-7.14565z" />
           </svg>
         </div>
-        <div
-          class="boggle-row"
-          :key="JSON.stringify(row) + rowIndex"
-          v-for="(row, rowIndex) in rows"
-        >
-          <div
-            :class="{
-              'boggle-cell': true,
-              'boggle-cell-highlighted':
-                highlightedCells[letterIndex][rowIndex],
-              'boggle-cell-highlighted-start':
-                letterIndex === highlightStart[0] &&
-                rowIndex === highlightStart[1],
-            }"
-            :key="letter + letterIndex"
-            v-for="(letter, letterIndex) in row"
-          >
+        <div class="boggle-row" :key="JSON.stringify(row) + rowIndex" v-for="(row, rowIndex) in rows">
+          <div :class="{
+            'boggle-cell': true,
+            'boggle-cell-highlighted':
+              highlightedCells[letterIndex][rowIndex],
+            'boggle-cell-highlighted-start':
+              letterIndex === highlightStart[0] &&
+              rowIndex === highlightStart[1],
+          }" :key="letter + letterIndex" v-for="(letter, letterIndex) in row">
             {{ hidden ? "&nbsp;" : letter
-            }}<span v-if="!hidden && letter === 'Q'" class="boggle-cell-qu"
-              >u</span
-            >
+            }}<span v-if="!hidden && letter === 'Q'" class="boggle-cell-qu">u</span>
           </div>
         </div>
       </div>
       <input type="checkbox" v-model="hidden" />
       <div v-if="timeIsUp">
-        <b-button
-          variant="primary"
-          :disabled="isShuffling || allowedDifficulties.length === 0"
-          @click="shuffleDice"
-          ><b-icon-shuffle></b-icon-shuffle>&nbsp;&nbsp;Shuffle</b-button
-        >
+        <BButton variant="primary" :disabled="isShuffling || allowedDifficulties.length === 0" @click="shuffleDice">
+          <IBiShuffle></IBiShuffle>&nbsp;&nbsp;Shuffle
+        </BButton>
       </div>
     </div>
-    <div
-      v-show="!timeIsUp"
-      style="
+    <div v-show="!timeIsUp" style="
         width: 50%;
         display: flex;
         flex-direction: row;
         justify-content: space-around;
-      "
-    >
+      ">
       <div>
-        <base-timer
-          ref="timer"
-          @timesup="playTimesUp"
-          @pause="(paused) => (hidden = paused)"
-        ></base-timer>
-        <b-button @click="resetClicked"
-          ><b-icon-arrow-clockwise></b-icon-arrow-clockwise>&nbsp;&nbsp;Restart
-          Timer</b-button
-        >
+        <base-timer ref="timer" @timesup="playTimesUp" @pause="(paused) => (hidden = paused)"></base-timer>
+        <BButton @click="resetClicked"><i-bi-arrow-clockwise></i-bi-arrow-clockwise>&nbsp;&nbsp;Restart
+          Timer</BButton>
       </div>
       <div>
         <div v-if="!isShuffling">
-          <div>Difficulty: {{ difficultyRating }}</div>
+          <div>Difficulty: {{ difficultyRating }} ({{ Math.round(scoreEvaluation) }})</div>
           <div>Possible Words: {{ numPossible }}</div>
           <div>Max Score: {{ possibleScore }}</div>
         </div>
@@ -110,86 +77,54 @@
             v-model="allowedDifficultyVeryHard"
           /><label for="allowVeryHard">Very Hard</label>
         </div> -->
-        <b-button
-          variant="primary"
-          :disabled="isShuffling || allowedDifficulties.length === 0"
-          @click="shuffleDice"
-          ><b-icon-shuffle></b-icon-shuffle>&nbsp;&nbsp;Shuffle</b-button
-        >
+        <BButton variant="primary" :disabled="isShuffling || allowedDifficulties.length === 0" @click="shuffleDice">
+          <IBiShuffle></IBiShuffle>&nbsp;&nbsp;Shuffle
+        </BButton>
         <br />
-        <b-button
-          variant="primary"
-          :disabled="isShuffling || !undoStack.length"
-          @click="undo"
-          ><b-icon-arrow-left-short></b-icon-arrow-left-short
-          >&nbsp;&nbsp;</b-button
-        >
-        <b-button
-          variant="primary"
-          :disabled="isShuffling || !redoStack.length"
-          @click="redo"
-          ><b-icon-arrow-right-short></b-icon-arrow-right-short
-          >&nbsp;&nbsp;</b-button
-        >
-        <!-- <b-button
+        <BButton variant="primary" :disabled="isShuffling || !undoStack.length" @click="undo">
+          <i-bi-arrow-left-short></i-bi-arrow-left-short>&nbsp;&nbsp;
+        </BButton>
+        <BButton variant="primary" :disabled="isShuffling || !redoStack.length" @click="redo">
+          <i-bi-arrow-right-short></i-bi-arrow-right-short>&nbsp;&nbsp;
+        </BButton>
+        <!-- <BButton
                     variant="primary"
                     :disabled="isShuffling"
                     @click="shuffleOnce"
                     ><b-icon-shuffle></b-icon-shuffle>&nbsp;&nbsp;Shuffle
-                    Once</b-button
+                    Once</BButton
                 > -->
       </div>
     </div>
-    <div
-      v-if="dictionaryTrie"
-      v-show="timeIsUp"
-      style="
+    <div v-if="dictionaryTrie" v-show="timeIsUp" style="
         width: 50%;
         display: flex;
         flex-direction: column;
         justify-content: space-around;
-      "
-    >
-      <dictionary-tester
-        @changeword="changeWord"
-        @submit-guess="submitGuess"
-        :show-score="isValidScore"
-        :force-definition="hoveredWord"
-      ></dictionary-tester>
+      ">
+      <dictionary-tester @changeword="changeWord" @submit-guess="submitGuess" :show-score="isValidScore"
+        :force-definition="hoveredWord"></dictionary-tester>
       <b-collapse v-model="showGuessedWords">
         <div style="max-height: 50vh; overflow-y: auto" ref="foundwords">
           <b-list-group>
-            <b-list-group-item
-              v-for="w in guessedWordEntries"
-              @mouseenter="mouseEnterDictEntry(w[0])"
-              @mouseleave="mouseLeaveDictEntry"
-              :key="w[0]"
-              :id="'foundwords-entry-' + w[0]"
-            >
+            <b-list-group-item v-for="w in guessedWordEntries" @mouseenter="mouseEnterDictEntry(w[0])"
+              @mouseleave="mouseLeaveDictEntry" :key="w[0]" :id="'foundwords-entry-' + w[0]">
               {{ w[1] }}
             </b-list-group-item>
           </b-list-group>
         </div>
       </b-collapse>
       <div>
-        <b-button
-          style="width: 100%"
-          variant="outline-secondary"
-          @click="showBestWords = !showBestWords"
-        >
-          <b-icon :icon="'chevron-' + (showBestWords ? 'up' : 'down')"></b-icon>
+        <BButton style="width: 100%" variant="outline-secondary" @click="showBestWords = !showBestWords">
+          <IBiChevronUp v-if="showBestWords"></IBiChevronUp>
+          <IBiChevronDown v-else></IBiChevronDown>
           {{ (showBestWords ? " Hide" : " Show") + " best words" }}
-        </b-button>
+        </BButton>
         <b-collapse v-model="showBestWords">
           <b-list-group>
-            <b-list-group-item
-              v-for="w in bestWords"
-              :variant="userFoundWords.includes(w) ? 'success' : ''"
-              @mouseenter="mouseEnterDictEntry(w)"
-              @mouseleave="mouseLeaveDictEntry"
-              :key="w"
-              :id="'bestwords-entry-' + w"
-            >
+            <b-list-group-item v-for="w in bestWords" :variant="userFoundWords.includes(w) ? 'success' : ''"
+              @mouseenter="mouseEnterDictEntry(w)" @mouseleave="mouseLeaveDictEntry" :key="w"
+              :id="'bestwords-entry-' + w">
               {{ w }}
               <!-- <dictionary-entry-popover
                 :target="'bestwords-entry-' + w"
@@ -209,6 +144,8 @@ import { BoggleWords } from "../boggle_solver";
 import BaseTimer from "./BaseTimer.vue";
 import DictionaryTester from "./DictionaryTester.vue";
 import Dictionary from "../Dictionary";
+import timesup from "../assets/timesup.wav"
+import buzzer from "../assets/ffbuzzer.mp3"
 
 const BOGGLE_DICE = [
   "AAEEGN",
@@ -275,6 +212,58 @@ function score(word) {
     return 11;
   }
 }
+const getDirectionFromDXY = (dx, dy) => {
+  if (dx === -1) {
+    switch (dy) {
+      case -1:
+        return 7
+      case 0:
+        return 6
+      case 1:
+        return 5
+    }
+  } else if (dx == 0) {
+    switch (dy) {
+      case -1:
+        return 0
+      case 0:
+        return 0
+      case 1:
+        return 4
+    }
+  } else if (dx == 1) {
+    switch (dy) {
+      case -1:
+        return 1
+      case 0:
+        return 2
+      case 1:
+        return 3
+    }
+  }
+}
+const getDirectionSharpness = (dir1, dir2) => {
+  let diff = Math.abs(dir2 - dir1)
+  if (diff > 4) {
+    diff = 8 - diff
+  }
+  return diff
+}
+function tangledScore(locations) {
+  let lastDirection = 0
+  let tangledness = 1
+  for (let i = 1; i < locations.length; i++) {
+    const dx = locations[(i + 1) % locations.length][0] - locations[i][0]
+    const dy = locations[(i + 1) % locations.length][1] - locations[i][1]
+    const direction = getDirectionFromDXY(dx, dy)
+    if (i > 1) {
+      const sharpness = 1 - (getDirectionSharpness(direction, lastDirection) / 4)
+      tangledness *= sharpness
+    }
+    lastDirection = direction
+  }
+  return tangledness
+}
 let dictionaryTrie = null;
 export default {
   components: {
@@ -298,6 +287,7 @@ export default {
       isShuffling: false,
       commonWords: [],
       difficultyRating: "",
+      scoreEvaluation: 0,
       highlightedCells: [
         [false, false, false, false],
         [false, false, false, false],
@@ -332,17 +322,17 @@ export default {
   },
   methods: {
     async initializeFeliz() {
-      const buzzerAudio = new Audio(require("@/assets/ffbuzzer.mp3"));
+      const buzzerAudio = new Audio(buzzer);
       buzzerAudio.addEventListener("canplaythrough", () => {
         this.buzzerAudio = buzzerAudio;
       });
-      const timesUpAudio = new Audio(require("@/assets/timesup.wav"));
+      const timesUpAudio = new Audio(timesup);
       timesUpAudio.addEventListener("canplaythrough", () => {
         this.timesUpAudio = timesUpAudio;
       });
       return new Promise((res) => {
         const felizAudio = new Audio(
-          "https://ia903102.us.archive.org/16/items/cd_feliz-navidad_various-artists-alvaro-torres-angela-carra/disc1/01.%20Jos%C3%A9%20Feliciano%20-%20Feliz%20Navidad_sample.mp3"
+          "https://ia801208.us.archive.org/20/items/ChristmasSongsFelizNavidad1/Christmas%20Songs%20-%20Feliz%20Navidad%281%29.mp3"
         );
         felizAudio.addEventListener("canplaythrough", () => {
           this.feliz = felizAudio;
@@ -372,9 +362,8 @@ export default {
       } else if (dX === 1) {
         rotation = "rotate(" + [315, 0, 45][dY + 1] + "deg)";
       }
-      return `transform: translate(${19 * lastPosition[0] + 10 * (dX + 1)}vh, ${
-        20 * lastPosition[1] + 10 * (dY + 1)
-      }vh) ${rotation} scale(3);`;
+      return `transform: translate(${19 * lastPosition[0] + 10 * (dX + 1)}vh, ${20 * lastPosition[1] + 10 * (dY + 1)
+        }vh) ${rotation} scale(3);`;
     },
     changeWord(w) {
       this.hoveredWord = "";
@@ -466,7 +455,7 @@ export default {
           Object.keys(this.possibleWords)
         );
         this.commonWords = commonWords;
-        this.updateDifficulty();
+        await this.updateDifficulty();
         const difficultyBacklog = backlog[this.difficultyRating];
         if (difficultyBacklog && difficultyBacklog.length < 20) {
           difficultyBacklog.push(currentBoardString);
@@ -482,7 +471,7 @@ export default {
           Object.keys(this.possibleWords)
         );
         this.commonWords = commonWords;
-        this.updateDifficulty();
+        await this.updateDifficulty();
         if (!this.allowedDifficulties.includes(this.difficultyRating)) {
           const nextBoard = backlog[this.getRandomAllowedDifficulty()].pop();
           if (nextBoard) {
@@ -500,9 +489,7 @@ export default {
         this.feliz.pause();
       }
       this.isShuffling = false;
-      Object.keys(this.possibleWords).forEach((w) => {
-        console.log(w + " (" + score(w) + ")");
-      });
+
       // this.shuffleOnce();
       this.$refs.timer.startTimer();
       // window.localStorage.setItem(J);
@@ -528,22 +515,23 @@ export default {
       }
       this.rows = newRows;
     },
-    updateDifficulty() {
+    async updateDifficulty() {
       if (!this.dictionaryTrie) {
         this.difficultyRating = "";
         return;
       }
-      const possibleWords = Object.keys(this.possibleWords).filter(
-        (w) => w.length > 3
-      );
-      let numCommon = this.commonWords.filter((w) => w.length > 3).length;
-      if (possibleWords.length < 1) {
+      const ngrammap = new Map()
+      await Promise.all(Object.keys(this.possibleWords).map(w => Dictionary.getNGram(w).then(ng => ngrammap.set(w, ng || 0))))
+      const allkeys = Object.keys(this.possibleWords).sort((a, b) => tangledScore(this.possibleWords[a]) * ngrammap.get(a) - tangledScore(this.possibleWords[b]) * ngrammap.get(b))
+
+      this.scoreEvaluation = allkeys.reduce((acc, cur) => acc + Math.log(Math.max(1, tangledScore(this.possibleWords[cur]) * ngrammap.get(cur))), 0)
+      if (allkeys.length < 1) {
         this.difficultyRating = "No valid words found!";
-      } else if (possibleWords.length < 10 || numCommon < 8) {
+      } else if (this.scoreEvaluation < 500) {
         this.difficultyRating = DIFFICULTY_RATING.VERY_HARD;
-      } else if (numCommon < 17 || possibleWords.length < 100) {
+      } else if (this.scoreEvaluation < 900) {
         this.difficultyRating = DIFFICULTY_RATING.TOUGH;
-      } else if (numCommon > 40 || possibleWords.length > 225) {
+      } else if (this.scoreEvaluation > 1300) {
         this.difficultyRating = DIFFICULTY_RATING.EASY;
       } else {
         this.difficultyRating = DIFFICULTY_RATING.NORMAL;
@@ -598,7 +586,7 @@ export default {
       if (!this.isShuffling) {
         Dictionary.getCommon(Object.keys(this.possibleWords)).then((c) => {
           this.commonWords = c;
-          this.updateDifficulty();
+          return this.updateDifficulty();
         });
       }
       this.userFoundWords = [];
