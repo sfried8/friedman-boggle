@@ -306,6 +306,7 @@ export default {
       userFoundWords: [],
       timeIsUp: false,
       hoveredWord: "",
+      bestWords: [],
     };
   },
   mounted() {
@@ -536,6 +537,34 @@ export default {
       } else {
         this.difficultyRating = DIFFICULTY_RATING.NORMAL;
       }
+      const best = this.commonWords.filter((w) => w.length > 3);
+      best.sort((a, b) => {
+        if (a.length === b.length) {
+          return a.localeCompare(b);
+        }
+        return b.length - a.length;
+      });
+      const bestWord = Object.keys(this.possibleWords)
+        .filter((w) => w.length > 3)
+        .sort((a, b) => {
+          if (a.length === b.length) {
+            return ngrammap.get(b) - ngrammap.get(a);
+          }
+          return b.length - a.length;
+        })[0];
+      // return bestWord;
+      const top5 = best.slice(0, 5);
+      if (
+        bestWord &&
+        top5.length > 0 &&
+        !top5.includes(bestWord) &&
+        bestWord.length > top5[0].length
+      ) {
+        top5.splice(0, 0, bestWord);
+      } else {
+        top5.push(best[5]);
+      }
+      this.bestWords = top5;
     },
 
     resetClicked() {
@@ -635,36 +664,7 @@ export default {
       }
       return validWords;
     },
-    bestWords() {
-      const best = this.commonWords.filter((w) => w.length > 3);
-      best.sort((a, b) => {
-        if (a.length === b.length) {
-          return a.localeCompare(b);
-        }
-        return b.length - a.length;
-      });
-      const bestWord = Object.keys(this.possibleWords)
-        .filter((w) => w.length > 3)
-        .sort((a, b) => {
-          if (a.length === b.length) {
-            return a.localeCompare(b);
-          }
-          return b.length - a.length;
-        })[0];
-      // return bestWord;
-      const top5 = best.slice(0, 5);
-      if (
-        bestWord &&
-        top5.length > 0 &&
-        !top5.includes(bestWord) &&
-        bestWord.length > top5[0].length
-      ) {
-        top5.splice(0, 0, bestWord);
-      } else {
-        top5.push(best[5]);
-      }
-      return top5;
-    },
+
     numPossible() {
       return Object.keys(this.possibleWords).length;
     },
