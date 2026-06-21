@@ -30,21 +30,37 @@
           </div>
         </div>
       </div>
-      <input type="checkbox" v-model="hidden" />
-      <div v-if="timeIsUp">
+      <b-form-checkbox v-model="hidden" name="check-button" button><i-bi-eye v-if="!hidden"></i-bi-eye><i-bi-eye-slash
+          v-else></i-bi-eye-slash></b-form-checkbox>
+      <b-button-group>
+        <b-button @click="() => { showDictionary = true; $refs.timer.paused = true }"
+          :disabled="showDictionary"><i-bi-book></i-bi-book></b-button>
+        <b-button @click="showDictionary = false" :disabled="!showDictionary"><i-bi-clock></i-bi-clock></b-button>
+      </b-button-group>
+      <b-button @click="showSettings = true"><i-bi-gear></i-bi-gear></b-button>
+      <br />
+      <b-button-group>
+        <BButton variant="primary" :disabled="isShuffling || !undoStack.length" @click="undo">
+          <i-bi-arrow-left-short></i-bi-arrow-left-short>&nbsp;&nbsp;
+        </BButton>
         <BButton variant="primary" :disabled="isShuffling || allowedDifficulties.length === 0" @click="shuffleDice">
           <IBiShuffle></IBiShuffle>&nbsp;&nbsp;Shuffle
         </BButton>
-      </div>
+
+        <BButton variant="primary" :disabled="isShuffling || !redoStack.length" @click="redo">
+          <i-bi-arrow-right-short></i-bi-arrow-right-short>&nbsp;&nbsp;
+        </BButton>
+      </b-button-group>
     </div>
-    <div v-show="!timeIsUp" style="
+    <div v-show="!showDictionary" style="
         width: 50%;
         display: flex;
         flex-direction: row;
         justify-content: space-around;
       ">
       <div>
-        <base-timer ref="timer" @timesup="playTimesUp" @pause="(paused) => (hidden = paused)"></base-timer>
+        <base-timer ref="timer" :time-limit="timerLength" @timesup="playTimesUp"
+          @pause="(paused) => (hidden = paused)"></base-timer>
         <BButton @click="resetClicked"><i-bi-arrow-clockwise></i-bi-arrow-clockwise>&nbsp;&nbsp;Restart
           Timer</BButton>
       </div>
@@ -77,16 +93,7 @@
             v-model="allowedDifficultyVeryHard"
           /><label for="allowVeryHard">Very Hard</label>
         </div> -->
-        <BButton variant="primary" :disabled="isShuffling || allowedDifficulties.length === 0" @click="shuffleDice">
-          <IBiShuffle></IBiShuffle>&nbsp;&nbsp;Shuffle
-        </BButton>
-        <br />
-        <BButton variant="primary" :disabled="isShuffling || !undoStack.length" @click="undo">
-          <i-bi-arrow-left-short></i-bi-arrow-left-short>&nbsp;&nbsp;
-        </BButton>
-        <BButton variant="primary" :disabled="isShuffling || !redoStack.length" @click="redo">
-          <i-bi-arrow-right-short></i-bi-arrow-right-short>&nbsp;&nbsp;
-        </BButton>
+
         <!-- <BButton
                     variant="primary"
                     :disabled="isShuffling"
@@ -96,7 +103,7 @@
                 > -->
       </div>
     </div>
-    <div v-if="dictionaryTrie" v-show="timeIsUp" style="
+    <div v-if="dictionaryTrie" v-show="showDictionary" style="
         width: 50%;
         display: flex;
         flex-direction: column;
@@ -124,8 +131,8 @@
           <b-list-group>
             <b-list-group-item v-for="w in bestWords" :variant="userFoundWords.includes(w) ? 'success' : ''"
               @mouseenter="mouseEnterDictEntry(w)" @mouseleave="mouseLeaveDictEntry" :key="w"
-              :id="'bestwords-entry-' + w">
-              {{ w }}
+              :id="'bestwords-entry-' + w" class="best-word">
+              {{ w }} <b-button class="reject-best-word-button" @click="rejectWord(w)">👎</b-button>
               <!-- <dictionary-entry-popover
                 :target="'bestwords-entry-' + w"
                 :word="w"
@@ -136,6 +143,7 @@
         </b-collapse>
       </div>
     </div>
+    <SettingsModal v-if="showSettings" @close="showSettings = false" @settings-changed="updateSettings"></SettingsModal>
   </div>
 </template>
 
@@ -146,6 +154,8 @@ import DictionaryTester from "./DictionaryTester.vue";
 import Dictionary from "../Dictionary";
 import timesup from "../assets/timesup.wav"
 import buzzer from "../assets/ffbuzzer.mp3"
+import feliz from "../assets/feliz.mp3"
+import SettingsModal from "./SettingsModal.vue";
 
 const BOGGLE_DICE = [
   "AAEEGN",
@@ -269,6 +279,7 @@ export default {
   components: {
     BaseTimer,
     DictionaryTester,
+    SettingsModal,
   },
   data() {
     return {
@@ -302,11 +313,17 @@ export default {
       allowedDifficultyNormal: true,
       allowedDifficultyTough: false,
       allowedDifficultyVeryHard: false,
+      thresholdEasy: 1300,
+      thresholdNormal: 900,
+      thresholdTough: 500,
+      timerLength: 180,
       isValidScore: false,
       userFoundWords: [],
       timeIsUp: false,
+      showDictionary: false,
       hoveredWord: "",
       bestWords: [],
+      showSettings: false,
     };
   },
   mounted() {
@@ -319,9 +336,28 @@ export default {
         this.setBoardFromString(boardString);
       }
     }
+    this.loadSettingsFromStorage();
     this.initializeFeliz().then(() => this.initializeDictionary());
   },
   methods: {
+    loadSettingsFromStorage() {
+      const settings = window.localStorage.getItem("boggleSettings");
+      if (settings) {
+        const parsedSettings = JSON.parse(settings);
+        this.allowedDifficultyEasy = parsedSettings.allowedDifficultyEasy;
+        this.allowedDifficultyNormal = parsedSettings.allowedDifficultyNormal;
+        this.allowedDifficultyTough = parsedSettings.allowedDifficultyTough;
+        this.allowedDifficultyVeryHard = parsedSettings.allowedDifficultyVeryHard;
+        this.thresholdEasy = parsedSettings.thresholdEasy;
+        this.thresholdNormal = parsedSettings.thresholdNormal;
+        this.thresholdTough = parsedSettings.thresholdTough;
+        this.timerLength = parsedSettings.timerLength;
+      }
+    },
+    updateSettings() {
+      this.loadSettingsFromStorage();
+      this.updateDifficulty();
+    },
     async initializeFeliz() {
       const buzzerAudio = new Audio(buzzer);
       buzzerAudio.addEventListener("canplaythrough", () => {
@@ -333,7 +369,7 @@ export default {
       });
       return new Promise((res) => {
         const felizAudio = new Audio(
-          "https://ia801208.us.archive.org/20/items/ChristmasSongsFelizNavidad1/Christmas%20Songs%20-%20Feliz%20Navidad%281%29.mp3"
+          feliz
         );
         felizAudio.addEventListener("canplaythrough", () => {
           this.feliz = felizAudio;
@@ -521,11 +557,11 @@ export default {
         this.difficultyRating = "";
         return;
       }
-      const ngrammap = new Map()
-      await Promise.all(Object.keys(this.possibleWords).map(w => Dictionary.getNGram(w).then(ng => ngrammap.set(w, ng || 0))))
-      const allkeys = Object.keys(this.possibleWords).sort((a, b) => tangledScore(this.possibleWords[a]) * ngrammap.get(a) - tangledScore(this.possibleWords[b]) * ngrammap.get(b))
+      const dictionaryEntryMap = new Map()
+      await Promise.all(Object.keys(this.possibleWords).map(w => Dictionary.getDefinition(w).then(d => dictionaryEntryMap.set(w, d))))
+      const allkeys = Object.keys(this.possibleWords).sort((a, b) => tangledScore(this.possibleWords[a]) * (dictionaryEntryMap.get(a).ngram || 0) - tangledScore(this.possibleWords[b]) * (dictionaryEntryMap.get(b).ngram || 0))
 
-      this.scoreEvaluation = allkeys.reduce((acc, cur) => acc + Math.log(Math.max(1, tangledScore(this.possibleWords[cur]) * ngrammap.get(cur))), 0)
+      this.scoreEvaluation = allkeys.reduce((acc, cur) => acc + Math.log(Math.max(1, tangledScore(this.possibleWords[cur]) * (dictionaryEntryMap.get(cur).ngram || 0))), 0)
       if (allkeys.length < 1) {
         this.difficultyRating = "No valid words found!";
       } else if (this.scoreEvaluation < 500) {
@@ -537,7 +573,7 @@ export default {
       } else {
         this.difficultyRating = DIFFICULTY_RATING.NORMAL;
       }
-      const best = this.commonWords.filter((w) => w.length > 3);
+      const best = this.commonWords.filter((w) => w.length > 3 && !dictionaryEntryMap.get(w).precedentRejection);
       best.sort((a, b) => {
         if (a.length === b.length) {
           return a.localeCompare(b);
@@ -545,10 +581,10 @@ export default {
         return b.length - a.length;
       });
       const bestWord = Object.keys(this.possibleWords)
-        .filter((w) => w.length > 3)
+        .filter((w) => w.length > 3 && !dictionaryEntryMap.get(w).precedentRejection)
         .sort((a, b) => {
           if (a.length === b.length) {
-            return ngrammap.get(b) - ngrammap.get(a);
+            return (dictionaryEntryMap.get(b).ngram || 0) - (dictionaryEntryMap.get(a).ngram || 0);
           }
           return b.length - a.length;
         })[0];
@@ -569,6 +605,7 @@ export default {
 
     resetClicked() {
       this.timeIsUp = false;
+      this.showDictionary = false;
       this.$refs.timer.startTimer();
     },
     getRandomAllowedDifficulty() {
@@ -580,12 +617,7 @@ export default {
       const g = guess.toUpperCase();
       if (this.userFoundWords.includes(g)) {
         this.buzzerAudio.play();
-        this.$bvToast.toast(`"${g}" was already said!`, {
-          title: `Uh oh`,
-          variant: "danger",
-          solid: true,
-          toaster: "b-toaster-top-center",
-        });
+
       } else if (this.possibleWords[g]) {
         this.userFoundWords.push(g);
         setTimeout(() => {
@@ -593,12 +625,7 @@ export default {
         }, 0);
       } else {
         this.buzzerAudio.play();
-        this.$bvToast.toast(`That word is invalid!`, {
-          title: `Uh oh`,
-          variant: "danger",
-          solid: true,
-          toaster: "b-toaster-top-center",
-        });
+
       }
     },
     playTimesUp() {
@@ -607,8 +634,13 @@ export default {
       }
       setTimeout(() => {
         this.timeIsUp = true;
+        this.showDictionary = true;
       }, 1500);
     },
+    rejectWord(word) {
+      Dictionary.setPrecedentRejection(word, true);
+      this.updateDifficulty();
+    }
   },
   watch: {
     possibleWords() {
@@ -738,5 +770,13 @@ body {
 
 .boggle-cell-highlighted-start {
   background-color: rgb(55, 135, 221);
+}
+
+.reject-best-word-button {
+  opacity: 0;
+}
+
+.best-word:hover .reject-best-word-button {
+  opacity: 1 !important;
 }
 </style>

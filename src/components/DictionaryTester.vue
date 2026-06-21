@@ -1,23 +1,17 @@
 <template>
   <div>
     <div class="dictionary-tester" v-if="dictionaryIsInitialized">
-      <b-form-input
-        @submit="submit"
-        @keypress.enter="submit"
-        placeholder="Check Dictionary"
-        v-model="query"
-      />
+      <b-form-input @submit="submit" @keypress.enter="submit" placeholder="Check Dictionary" v-model="query" />
+      <div class="query" v-if="definitionToShow">{{ precedentRejectionToShow }}{{
+        wordToShow.toUpperCase() }} {{ definition && !overriddenDefinition && pointTotal ? `(${pointTotal})` : "" }}
+      </div>
       <div class="definition">{{ definitionToShow }}</div>
-      <div class="point-total">{{ pointTotal }}</div>
+      <b-button v-if="query && definition && !overriddenDefinition" @click="toggleRejection">{{ !precedentRejection ?
+        "Reject?" : "Accept?" }}</b-button>
     </div>
     <div v-else-if="needsDictionaryUpload">
       No Dictionary Data Found
-      <input
-        type="file"
-        ref="dictionaryfileinput"
-        @change="fileChange"
-        name="dictfile"
-      />
+      <input type="file" ref="dictionaryfileinput" @change="fileChange" name="dictfile" />
     </div>
     <div v-else>Loading dictionary data</div>
   </div>
@@ -32,6 +26,8 @@ export default {
       query: "",
       definition: "",
       overriddenDefinition: "",
+      precedentRejection: false,
+      overriddenPrecedentRejection: false,
       loadingMessage: "Loading dictionary data...",
       dictionaryIsInitialized: false,
       needsDictionaryUpload: false,
@@ -59,20 +55,34 @@ export default {
     submit() {
       this.$emit("submit-guess", this.query);
       this.query = "";
+      this.definition = "";
+      this.precedentRejection = false;
     },
+    toggleRejection() {
+      Dictionary.setPrecedentRejection(this.query, !this.precedentRejection);
+      this.precedentRejection = !this.precedentRejection;
+    },
+
   },
   watch: {
     query: function () {
       this.$emit("changeword", this.query.toUpperCase());
-      Dictionary.getDefinition(this.query).then((d) => (this.definition = d));
+      Dictionary.getDefinition(this.query).then((d) => {
+        this.definition = d.definition;
+        this.precedentRejection = d.precedentRejection;
+      });
     },
     forceDefinition() {
       if (this.forceDefinition) {
         Dictionary.getDefinition(this.forceDefinition).then(
-          (d) => (this.overriddenDefinition = d)
+          (d) => {
+            this.overriddenDefinition = d.definition;
+            this.overriddenPrecedentRejection = d.precedentRejection;
+          }
         );
       } else {
         this.overriddenDefinition = "";
+        this.overriddenPrecedentRejection = false;
       }
     },
   },
@@ -101,17 +111,26 @@ export default {
       }
       return "";
     },
+    wordToShow() {
+      return this.forceDefinition || this.query;
+    },
     definitionToShow() {
       return this.overriddenDefinition || this.definition;
+    },
+    precedentRejectionToShow() {
+      const isRejected = this.overriddenDefinition ? this.overriddenPrecedentRejection : this.precedentRejection;
+      return isRejected ? "🚫 " : "";
     },
   },
 };
 </script>
 
 <style>
-.point-total {
+.point-total,
+.query {
   font-size: 3rem;
 }
+
 .dictionary-tester {
   height: 30vh;
   overflow-y: auto;

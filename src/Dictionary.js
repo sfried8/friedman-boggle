@@ -51,7 +51,7 @@ const uploadWords = async (wordsAndDefinitions, progressCallback) => {
       longestDefinition = definition.length;
       wordWithLongDef = word;
     }
-    newEntries.push({ word, definition, isCommon, ngram: ngramMap.get(word) });
+    newEntries.push({ word, definition, isCommon, ngram: ngramMap.get(word), precedentRejection: false });
     wordsArr.push(word);
     if (newEntries.length > 10000) {
       await _db.words.bulkAdd(newEntries);
@@ -170,9 +170,9 @@ export default {
         .where("word")
         .equalsIgnoreCase(word)
         .first();
-      return entry.definition;
+      return entry ?? {};
     } catch (error) {
-      return;
+      return {};
     }
   },
   getNGram: async (word) => {
@@ -189,6 +189,26 @@ export default {
       return;
     }
   },
+  getPrecedentRejection: async (word) => {
+    if (!_db) {
+      await indexDictionary();
+    }
+    try {
+      const entry = await _db.words
+        .where("word")
+        .equalsIgnoreCase(word)
+        .first();
+      return entry.precedentRejection ?? false;
+    } catch (error) {
+      return false;
+    }
+  },
+  setPrecedentRejection: async (word, precedent) => {
+    if (!_db) {
+      await indexDictionary();
+    }
+    await _db.words.where("word").equalsIgnoreCase(word).modify({ precedentRejection: precedent });
+  },
   getCommon: async (listOfWords) => {
     if (!_db) {
       await indexDictionary();
@@ -196,6 +216,13 @@ export default {
     const entries = (
       await _db.words.where("word").anyOfIgnoreCase(listOfWords).toArray()
     ).filter((w) => w.isCommon);
+    return entries.map((e) => e.word);
+  },
+  getRejectedWords: async () => {
+    if (!_db) {
+      await indexDictionary();
+    }
+    const entries = await _db.words.filter(w => w.precedentRejection).toArray();
     return entries.map((e) => e.word);
   },
 };

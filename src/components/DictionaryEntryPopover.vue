@@ -1,6 +1,6 @@
 <template>
   <b-popover :target="target" triggers="hover" placement="right">
-    {{ word }} - {{ definition }}
+    {{ precedentRejection ? "🚫 " : "" }}{{ word }} - {{ definition }}
   </b-popover>
 </template>
 
@@ -11,13 +11,17 @@ export default {
   data() {
     return {
       definition: "",
+      precedentRejection: false,
     };
   },
   watch: {
     word: {
       handler: function () {
         this.definition = "Loading...";
-        Dictionary.getDefinition(this.word).then((r) => (this.definition = r));
+        Dictionary.getDefinition(this.word).then((r) => {
+          this.definition = r.definition;
+          this.precedentRejection = r.precedentRejection;
+        });
       },
       immediate: true,
     },
